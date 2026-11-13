@@ -48,6 +48,16 @@ const features = <StudioFeature>[
   StudioFeature('Voice Studio', 'Plan character voices and dialogue', Icons.record_voice_over),
   StudioFeature('Music Studio', 'Plan music and sound effects', Icons.music_note),
   StudioFeature('AI Movie Director', 'Plan shots, scenes and emotions', Icons.theaters_outlined),
+  StudioFeature('Emotion & Acting Studio', 'Plan expressions and acting', Icons.mood),
+  StudioFeature('Smart Costume Designer', 'Design outfits for each scene', Icons.checkroom),
+  StudioFeature('AI World Builder', 'Create story locations and worlds', Icons.public),
+  StudioFeature('Storyboard Preview', 'Review scenes before generation', Icons.view_carousel_outlined),
+  StudioFeature('Character Interaction', 'Plan how characters act together', Icons.groups_2_outlined),
+  StudioFeature('Camera & Action Control', 'Plan cinematic shots and motion', Icons.videocam_outlined),
+  StudioFeature('Movie Seasons', 'Continue stories across episodes', Icons.video_collection_outlined),
+  StudioFeature('Trailer & Thumbnail Maker', 'Plan trailers, posters and covers', Icons.movie_filter_outlined),
+  StudioFeature('Voice Recording Studio', 'Record authorized character voices', Icons.mic_none),
+  StudioFeature('Movie Quality Checker', 'Review continuity, voice and lip sync', Icons.fact_check_outlined),
 ];
 
 class HomeScreen extends StatelessWidget {
