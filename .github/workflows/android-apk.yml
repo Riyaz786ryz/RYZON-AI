@@ -37,6 +37,21 @@ jobs:
             flutter create --platforms=android --org com.ryzonai --project-name ryzon_ai .
           fi
 
+      - name: Set Android launcher app name
+        working-directory: android-app
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          source = manifest.read_text()
+          source, count = re.subn(r'<application\\b([^>]*)>', lambda m: '<application' + re.sub(r'android:label="[^"]*"', 'android:label="RYZON AI"', m.group(1)) + (' android:label="RYZON AI"' if 'android:label=' not in m.group(1) else '') + '>', source, count=1)
+          if count != 1:
+              raise SystemExit("Could not find Android application tag")
+          manifest.write_text(source)
+          PY
+
       - name: Install Flutter dependencies
         working-directory: android-app
         run: flutter pub get
