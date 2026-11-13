@@ -236,3 +236,10 @@ The user approved this proposed plan structure.
 - The Premium action is intentionally marked Coming Soon; it does not collect payment or claim an active subscription.
 - Daily quota tracking, persistent account usage, server-side enforcement, payment checkout, subscription verification, and AI provider connections are not implemented yet.
 - Final quotas, prices, and export capabilities must be configurable and validated against actual provider costs, device support, and service capacity. Do not promise unlimited generation or 4K on unsupported devices/services.
+
+## Free-plan daily usage preview (2026-11-13)
+- Added a local SharedPreferences-backed daily usage display for Cartoon Reels (5/day), Photo to Cartoon (5/day), Stories (3/day), Background Changes (3/day), and Movie Posters (1/day).
+- Added a quota service method intended to be called only after a successful generation; current AI generation flows are not connected to it yet.
+- The subscription screen clearly labels this as a local preview. It is not secure account-level enforcement and can be reset by reinstalling or changing device date/settings.
+- Still required: connect successful generation events, authenticated account sync, server-authoritative daily reset, server-side quota checks, and secure billing/subscription verification.
+- Build and device testing remain pending because a Flutter runtime/build has not been run in this environment.
