@@ -88,6 +88,15 @@ class HomeScreen extends StatelessWidget {
           title: const Text('RYZON AI', style: TextStyle(fontWeight: FontWeight.w800)),
           actions: [
             IconButton(
+              tooltip: 'Plans & Subscription',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SubscriptionScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.workspace_premium_outlined),
+            ),
+            IconButton(
               tooltip: 'Projects',
               onPressed: () => _showMessage(context, 'My Projects will be added in a later step.'),
               icon: const Icon(Icons.folder_open_outlined),
@@ -302,6 +311,131 @@ class _FeatureCard extends StatelessWidget {
                 Text(feature.subtitle, style: const TextStyle(color: Colors.white60, fontSize: 11)),
               ],
             ),
+          ),
+        ),
+      );
+}
+
+class SubscriptionScreen extends StatelessWidget {
+  const SubscriptionScreen({super.key});
+
+  Widget _planRow(String title, String limit) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFF8DE0B0), size: 19),
+            const SizedBox(width: 9),
+            Expanded(child: Text(title)),
+            const SizedBox(width: 8),
+            Text(limit, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Plans & Subscription')),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(18),
+            children: [
+              const Text('Choose your creative plan',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 7),
+              const Text(
+                'Start free and upgrade when you need more creation time and premium tools.',
+                style: TextStyle(color: Colors.white70, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(17),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.card_giftcard, color: Color(0xFF8DE0B0), size: 27),
+                          SizedBox(width: 10),
+                          Text('FREE PLAN', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Spacer(),
+                          Chip(label: Text('START HERE')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('Free daily limits', style: TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 8),
+                      _planRow('AI Cartoon Reels', '5/day • 10 sec each'),
+                      _planRow('Photo to Cartoon', '5 photos/day'),
+                      _planRow('Basic cartoon styles', '3 styles'),
+                      _planRow('Story Maker', '3 stories/day'),
+                      _planRow('Character Creator', 'Up to 2 characters'),
+                      _planRow('Basic voices', '3 voices'),
+                      _planRow('Languages', 'Tamil / English / Hindi'),
+                      _planRow('Basic subtitles', 'Included'),
+                      _planRow('Background Changer', '3/day'),
+                      _planRow('Video / Movie Splitter', '30s / 60s parts'),
+                      _planRow('Storyboard Preview', 'Included'),
+                      _planRow('Movie Poster Maker', '1/day'),
+                      _planRow('Basic Video Editor', 'Included'),
+                      _planRow('Export quality', 'Up to 720p'),
+                      _planRow('My Projects', 'Up to 5 projects'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Card(
+                color: const Color(0xFF30264F),
+                child: Padding(
+                  padding: const EdgeInsets.all(17),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.workspace_premium, color: Color(0xFFE7C7FF), size: 28),
+                          SizedBox(width: 10),
+                          Text('RYZON PREMIUM', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('More creative power for bigger projects.',
+                          style: TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 12),
+                      _planRow('Longer videos', '30s / 60s / more'),
+                      _planRow('AI generation credits', 'Higher monthly limits'),
+                      _planRow('All cartoon styles', 'Unlock all'),
+                      _planRow('Premium & emotional voices', 'Included'),
+                      _planRow('AI music and sound effects', 'Included'),
+                      _planRow('High-resolution export', 'Up to 4K if supported'),
+                      _planRow('Multi-character movie creation', 'Included'),
+                      _planRow('AI Lip Sync & Video-to-Cartoon', 'Included'),
+                      _planRow('Watermark-free export', 'Included'),
+                      _planRow('Cloud storage', 'More space'),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => _showMessage(
+                            context,
+                            'Premium payments will be enabled after secure billing and subscription verification are connected.',
+                          ),
+                          icon: const Icon(Icons.lock_outline),
+                          label: const Text('Premium — Coming Soon'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Plan preview only: these limits are the approved product proposal. Daily quota tracking, account sync, payment checkout, subscription verification, and server-side generation limits are not connected yet. Final limits and prices may be adjusted to match AI provider costs and capacity.',
+                style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.45),
+              ),
+            ],
           ),
         ),
       );
