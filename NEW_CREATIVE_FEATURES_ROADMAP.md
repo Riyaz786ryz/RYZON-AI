@@ -188,3 +188,9 @@ These additional features were approved and added to the Flutter home screen as 
 - Video / Movie Splitter is highlighted on the Home Page and now has an initial Flutter workflow: choose a gallery video, select 30- or 60-second segments, calculate sequential Part 1 / Part 2 / ... ranges, and export each segment using the native `video_trimmer` plugin.
 - The splitter shows saved output paths and progress. Verify output folder behavior, playback, file naming, edge cases, and device compatibility on a real Android device before treating it as production-ready.
 - Only process videos the user owns or is authorized to edit and share.
+
+## Character Creator & Character Memory – initial Flutter workflow
+- After on-device face detection, the creator can open a separate profile form for each selected person.
+- Each profile includes an editable character name, cartoon style, voice preference, optional outfit/appearance notes, and a continuity-lock switch.
+- The source photo is shown as a reference; face-specific crop thumbnails are not implemented yet.
+- Profile data is currently held in screen memory only. Permanent project storage, generated character artwork, voice generation, and cross-scene AI identity enforcement are not connected or device-tested yet.
