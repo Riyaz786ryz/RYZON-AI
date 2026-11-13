@@ -476,22 +476,235 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
       );
 
   void _confirmCharacters() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CharacterProfileScreen(
+          characterCount: _selected.length,
+          sourcePhotoPath: _photo!.path,
+        ),
+      ),
+    );
+  }
+}
+
+class CharacterProfileScreen extends StatefulWidget {
+  const CharacterProfileScreen({
+    super.key,
+    required this.characterCount,
+    required this.sourcePhotoPath,
+  });
+
+  final int characterCount;
+  final String sourcePhotoPath;
+
+  @override
+  State<CharacterProfileScreen> createState() => _CharacterProfileScreenState();
+}
+
+class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
+  late final List<TextEditingController> _nameControllers;
+  late final List<TextEditingController> _costumeControllers;
+  late final List<String> _styles;
+  late final List<String> _voices;
+  late final List<bool> _continuityLocks;
+
+  static const _styleOptions = ['3D Movie', 'Anime', 'Cute', 'Funny', 'Fantasy'];
+  static const _voiceOptions = ['Tamil - Male', 'Tamil - Female', 'English', 'Hindi', 'Choose later'];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameControllers = List.generate(
+      widget.characterCount,
+      (index) => TextEditingController(text: 'Character ${index + 1}'),
+    );
+    _costumeControllers = List.generate(
+      widget.characterCount,
+      (_) => TextEditingController(),
+    );
+    _styles = List.filled(widget.characterCount, '3D Movie');
+    _voices = List.filled(widget.characterCount, 'Choose later');
+    _continuityLocks = List.filled(widget.characterCount, true);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _nameControllers) {
+      controller.dispose();
+    }
+    for (final controller in _costumeControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _saveProfiles() {
+    final names = _nameControllers
+        .map((controller) => controller.text.trim())
+        .toList();
+    if (names.any((name) => name.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a name for every character.')),
+      );
+      return;
+    }
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Characters selected'),
+        title: const Text('Character profiles prepared'),
         content: Text(
-          '${_selected.length} person(s) selected. Cartoon character profile generation will be added in the next step.',
+          '${widget.characterCount} editable profile(s) are ready in this session. '
+          'Names, style, voice preference, costume notes and continuity settings have been collected. '
+          'Permanent saving and AI character image generation are not connected yet.',
         ),
         actions: [
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('OK'),
+            child: const Text('Done'),
           ),
         ],
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Character Creator & Memory')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const Text(
+              'Build your cast',
+              style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              '${widget.characterCount} selected person(s) from your photo. Set each character separately.',
+              style: const TextStyle(color: Colors.white70, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(
+                File(widget.sourcePhotoPath),
+                height: 170,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox(
+                  height: 90,
+                  child: Center(child: Text('Source photo preview unavailable')),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...List<Widget>.generate(widget.characterCount, (index) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 14),
+                child: Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            child: Text('${index + 1}'),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Character ${index + 1}',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.auto_awesome, color: Color(0xFFC8B6FF)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _nameControllers[index],
+                        decoration: const InputDecoration(
+                          labelText: 'Character name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.badge_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _styles[index],
+                        decoration: const InputDecoration(
+                          labelText: 'Cartoon style',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _styleOptions
+                            .map((style) => DropdownMenuItem(
+                                  value: style,
+                                  child: Text(style),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) setState(() => _styles[index] = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _voices[index],
+                        decoration: const InputDecoration(
+                          labelText: 'Voice preference',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _voiceOptions
+                            .map((voice) => DropdownMenuItem(
+                                  value: voice,
+                                  child: Text(voice),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) setState(() => _voices[index] = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _costumeControllers[index],
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: 'Outfit / appearance notes (optional)',
+                          hintText: 'Example: blue shirt, short hair, red shoes',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _continuityLocks[index],
+                        title: const Text('Remember this character look'),
+                        subtitle: const Text('Keep the chosen design consistent across scenes'),
+                        onChanged: (value) => setState(
+                          () => _continuityLocks[index] = value,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            FilledButton.icon(
+              onPressed: _saveProfiles,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Prepare Character Profiles'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'These profile settings are currently held only while this screen is open. Permanent project saving, face-crop previews, and AI character generation will be added after storage and generation services are connected.',
+              style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+            ),
+          ],
+        ),
+      );
 }
 
 class CartoonReelsScreen extends StatefulWidget {
