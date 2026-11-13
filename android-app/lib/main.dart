@@ -170,6 +170,52 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                sliver: SliverToBoxAdapter(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => FeatureScreen(feature: features[1]),
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(17),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF176B78), Color(0xFF183B58)],
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFF72DCE8), width: 1.2),
+                      ),
+                      child: const Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundColor: Color(0x33FFFFFF),
+                            child: Icon(Icons.content_cut, size: 27, color: Colors.white),
+                          ),
+                          SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('VIDEO / MOVIE SPLITTER', style: TextStyle(fontSize: 11, letterSpacing: 1.0, fontWeight: FontWeight.w800, color: Color(0xFFC9F8FF))),
+                                SizedBox(height: 5),
+                                Text('Turn one long video into many parts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                SizedBox(height: 4),
+                                Text('30 sec  •  60 sec  •  Part 1, Part 2, Part 3…', style: TextStyle(fontSize: 10, color: Colors.white70)),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, color: Colors.white, size: 17),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               const SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverToBoxAdapter(
