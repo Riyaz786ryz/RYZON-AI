@@ -243,3 +243,30 @@ The user approved this proposed plan structure.
 - The subscription screen clearly labels this as a local preview. It is not secure account-level enforcement and can be reset by reinstalling or changing device date/settings.
 - Still required: connect successful generation events, authenticated account sync, server-authoritative daily reset, server-side quota checks, and secure billing/subscription verification.
 - Build and device testing remain pending because a Flutter runtime/build has not been run in this environment.
+
+
+---
+
+# Google Flow-style AI Movie Studio
+
+The approved product direction is a unified, scene-based cartoon filmmaking workflow inspired by modern AI filmmaking tools. This is an original RYZON AI workflow; it does not imply access to or use of Google's private Flow models or services.
+
+## End-to-end workflow
+1. AI Character Creator — create original characters from prompts or authorized reference photos.
+2. AI Story Writer — draft story, scene descriptions, and dialogue.
+3. AI Scene Generator — divide the story into editable scenes.
+4. AI Movie Director — plan camera angles, actions, and expressions.
+5. Character Memory — preserve approved appearance, costume, and voice continuity.
+6. AI Video Generator — render approved scenes into video clips through a selected provider.
+7. AI Voice & Lip Sync — create or assign authorized multilingual dialogue and synchronize speech.
+8. AI Music & Effects — add licensed/generated music and sound effects.
+9. Movie Editor — assemble clips, voice, music, subtitles, and transitions.
+10. Export Movie — render and share the final MP4 in supported formats.
+
+## Current implementation status
+- The Flutter Home Page's AI Movie Maker card now opens a unified Movie Studio planning screen.
+- The screen accepts a movie title and story idea, and offers style, dialogue language, and scene-count choices.
+- It presents all ten workflow stages and creates an on-screen local plan draft.
+- The draft is not yet AI-generated, permanently saved, or exported as a movie.
+- No Google Flow account/API or other AI provider is connected. Provider selection, secure backend, authentication, cost/credit controls, consent checks, generation queue, media storage, editing/rendering pipeline, and real-device tests remain required.
+- RYZON AI must not claim to be Google Flow or imply Google's models are included. Provider terms, output rights, privacy, and regional availability must be reviewed before integration.
