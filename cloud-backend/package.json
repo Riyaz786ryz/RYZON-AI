@@ -1,0 +1,14 @@
+{
+  "name": "ryzon-ai-cloud-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Secure server-side Gemini API adapter for RYZON AI",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node --check src/server.js"
+  }
+}
