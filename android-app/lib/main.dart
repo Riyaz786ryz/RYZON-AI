@@ -241,6 +241,9 @@ class HomeScreen extends StatelessWidget {
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) {
+                              if (feature.title == 'Make Cartoon Reels') {
+                                return const CartoonReelsScreen();
+                              }
                               if (feature.title == 'Photo to Cartoon') {
                                 return const PhotoCharacterScreen();
                               }
@@ -484,6 +487,311 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CartoonReelsScreen extends StatefulWidget {
+  const CartoonReelsScreen({super.key});
+  @override
+  State<CartoonReelsScreen> createState() => _CartoonReelsScreenState();
+}
+
+class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
+  final ImagePicker _picker = ImagePicker();
+  final TextEditingController _captionController = TextEditingController();
+  final List<XFile> _photos = [];
+  int _seconds = 30;
+  String _style = '3D Movie';
+  String _language = 'Tamil';
+  String _mood = 'Funny';
+  bool _draftReady = false;
+
+  Future<void> _addPhotos() async {
+    try {
+      final picked = await _picker.pickMultiImage(imageQuality: 90);
+      if (!mounted || picked.isEmpty) return;
+      setState(() {
+        _photos.addAll(picked);
+        _draftReady = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not add photos. Please try again.')),
+      );
+    }
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+      _draftReady = false;
+    });
+  }
+
+  void _prepareDraft() {
+    if (_photos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('First add at least one photo for your reel.')),
+      );
+      return;
+    }
+    setState(() => _draftReady = true);
+  }
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Make Cartoon Reels')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B45D8), Color(0xFF39266F)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.smart_display_outlined, size: 34),
+                SizedBox(height: 8),
+                Text('Create your next short video',
+                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+                SizedBox(height: 5),
+                Text('Plan a vertical 9:16 cartoon reel for Shorts and Reels.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text('1. Add your photos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _addPhotos,
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: const Text('Choose one or more photos'),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          ),
+          if (_photos.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('${_photos.length} photo(s) selected', style: const TextStyle(color: Colors.white70)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 112,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _photos.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 9),
+                itemBuilder: (context, index) => Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(_photos[index].path),
+                        width: 88,
+                        height: 112,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox(
+                          width: 88, height: 112,
+                          child: ColoredBox(color: Color(0xFF343242), child: Icon(Icons.image_not_supported)),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 3,
+                      top: 3,
+                      child: IconButton.filledTonal(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _removePhoto(index),
+                        icon: const Icon(Icons.close, size: 16),
+                      ),
+                    ),
+                    Positioned(
+                      left: 6,
+                      bottom: 5,
+                      child: Text('${index + 1}', style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(color: Colors.black, blurRadius: 5)],
+                      )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          const Text('2. Reel settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          const Text('Video length'),
+          const SizedBox(height: 6),
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(value: 15, label: Text('15s')),
+              ButtonSegment(value: 30, label: Text('30s')),
+              ButtonSegment(value: 60, label: Text('60s')),
+            ],
+            selected: {_seconds},
+            onSelectionChanged: (value) => setState(() {
+              _seconds = value.first;
+              _draftReady = false;
+            }),
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: _style,
+            decoration: const InputDecoration(labelText: 'Cartoon style', border: OutlineInputBorder()),
+            items: const ['3D Movie', 'Anime', 'Cute', 'Funny', 'Fantasy']
+                .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                .toList(),
+            onChanged: (value) => setState(() {
+              if (value != null) _style = value;
+              _draftReady = false;
+            }),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _mood,
+            decoration: const InputDecoration(labelText: 'Reel mood', border: OutlineInputBorder()),
+            items: const ['Funny', 'Love', 'Adventure', 'Emotional', 'Dance']
+                .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                .toList(),
+            onChanged: (value) => setState(() {
+              if (value != null) _mood = value;
+              _draftReady = false;
+            }),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _language,
+            decoration: const InputDecoration(labelText: 'Dialogue / caption language', border: OutlineInputBorder()),
+            items: const ['Tamil', 'English', 'Hindi']
+                .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                .toList(),
+            onChanged: (value) => setState(() {
+              if (value != null) _language = value;
+              _draftReady = false;
+            }),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _captionController,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Reel title or caption (optional)',
+              hintText: 'Write a short title...',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (_) => setState(() => _draftReady = false),
+          ),
+          const SizedBox(height: 20),
+          const Text('3. Preview layout', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              width: 190,
+              height: 338,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF6C3EB6), Color(0xFF17182C)],
+                ),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFBFA6FF), width: 1.5),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _photos.isEmpty
+                  ? const Center(child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.smart_display_outlined, size: 42),
+                        SizedBox(height: 8),
+                        Text('9:16 REEL PREVIEW'),
+                        SizedBox(height: 4),
+                        Text('Add photos to begin', style: TextStyle(fontSize: 11, color: Colors.white70)),
+                      ],
+                    ))
+                  : Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(File(_photos.first.path), fit: BoxFit.cover),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
+                              stops: const [0.42, 1],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 14,
+                          child: Text(
+                            _captionController.text.isEmpty ? 'Your reel caption' : _captionController.text,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Center(child: Text('Vertical 9:16 • Shorts / Reels', style: TextStyle(color: Colors.white60, fontSize: 12))),
+          const SizedBox(height: 18),
+          FilledButton.icon(
+            onPressed: _prepareDraft,
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Prepare Reel Draft'),
+            style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+          ),
+          if (_draftReady) ...[
+            const SizedBox(height: 14),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(children: [
+                      Icon(Icons.check_circle, color: Colors.greenAccent),
+                      SizedBox(width: 8),
+                      Text('Reel draft prepared', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ]),
+                    const SizedBox(height: 8),
+                    Text('${_photos.length} photos • ${_seconds} seconds • 9:16'),
+                    Text('${_style} • ${_mood} • ${_language}'),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'This is a draft configuration only. Cartoon rendering, voice, music, and MP4 export will be connected in a later build.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          const Text(
+            'Use photos and voices only with permission. No AI cartoon video is uploaded or generated by this draft screen.',
+            style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
           ),
         ],
       ),
