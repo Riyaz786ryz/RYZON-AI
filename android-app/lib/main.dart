@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_trimmer/video_trimmer.dart';
 
 void main() => runApp(const RyzonAiApp());
@@ -316,6 +317,103 @@ class _FeatureCard extends StatelessWidget {
       );
 }
 
+
+class FreeQuotaService {
+  static const Map<String, int> limits = {
+    'Cartoon Reels': 5,
+    'Photo to Cartoon': 5,
+    'Stories': 3,
+    'Background Changes': 3,
+    'Movie Posters': 1,
+  };
+
+  static String _todayKey() => DateTime.now().toIso8601String().substring(0, 10);
+
+  static Future<int> usedToday(String feature) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('ryzon_quota_' + _todayKey() + '_' + feature) ?? 0;
+  }
+
+  // Call this only after the corresponding generation succeeds.
+  static Future<void> recordSuccessfulUse(String feature) async {
+    final limit = limits[feature];
+    if (limit == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'ryzon_quota_' + _todayKey() + '_' + feature;
+    final current = prefs.getInt(key) ?? 0;
+    if (current < limit) {
+      await prefs.setInt(key, current + 1);
+    }
+  }
+}
+
+class QuotaUsageCard extends StatelessWidget {
+  const QuotaUsageCard({super.key});
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.today_outlined, color: Color(0xFFC8B6FF)),
+                  SizedBox(width: 9),
+                  Text('TODAY’S FREE USAGE',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 5),
+              const Text('Usage is stored on this device in this preview version.',
+                  style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const SizedBox(height: 12),
+              ...FreeQuotaService.limits.entries.map((entry) {
+                return FutureBuilder<int>(
+                  future: FreeQuotaService.usedToday(entry.key),
+                  builder: (context, snapshot) {
+                    final used = snapshot.data ?? 0;
+                    final limit = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 13),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: Text(entry.key)),
+                              Text('$used / $limit',
+                                  style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: (used / limit).clamp(0.0, 1.0),
+                              minHeight: 7,
+                              backgroundColor: const Color(0xFF383544),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
+              const Text(
+                'This is a local usage display, not secure account-level quota enforcement. It will reset by date on this device and can be changed by reinstalling or changing device settings.',
+                style: TextStyle(color: Colors.orangeAccent, fontSize: 11, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
 class SubscriptionScreen extends StatelessWidget {
   const SubscriptionScreen({super.key});
 
@@ -348,6 +446,8 @@ class SubscriptionScreen extends StatelessWidget {
                 style: TextStyle(color: Colors.white70, height: 1.4),
               ),
               const SizedBox(height: 18),
+              const QuotaUsageCard(),
+              const SizedBox(height: 14),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(17),
@@ -432,7 +532,7 @@ class SubscriptionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Plan preview only: these limits are the approved product proposal. Daily quota tracking, account sync, payment checkout, subscription verification, and server-side generation limits are not connected yet. Final limits and prices may be adjusted to match AI provider costs and capacity.',
+                'Plan preview only: these limits are the approved product proposal. Account sync, payment checkout, subscription verification, and secure server-side generation limits are not connected yet. Local usage is only a preview and is not connected to generation actions. Final limits and prices may be adjusted to match AI provider costs and capacity.',
                 style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.45),
               ),
             ],
