@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_trimmer/video_trimmer.dart';
 
 void main() => runApp(const RyzonAiApp());
 
@@ -238,9 +239,15 @@ class HomeScreen extends StatelessWidget {
                         feature: feature,
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => feature.title == 'Photo to Cartoon'
-                                ? const PhotoCharacterScreen()
-                                : FeatureScreen(feature: feature),
+                            builder: (_) {
+                              if (feature.title == 'Photo to Cartoon') {
+                                return const PhotoCharacterScreen();
+                              }
+                              if (feature.title == 'Video / Movie Splitter') {
+                                return const VideoMovieSplitterScreen();
+                              }
+                              return FeatureScreen(feature: feature);
+                            },
                           ),
                         ),
                       );
@@ -476,6 +483,253 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class VideoMovieSplitterScreen extends StatefulWidget {
+  const VideoMovieSplitterScreen({super.key});
+
+  @override
+  State<VideoMovieSplitterScreen> createState() => _VideoMovieSplitterScreenState();
+}
+
+class _VideoMovieSplitterScreenState extends State<VideoMovieSplitterScreen> {
+  final ImagePicker _picker = ImagePicker();
+  final Trimmer _trimmer = Trimmer();
+  XFile? _video;
+  Duration _duration = Duration.zero;
+  int _clipSeconds = 30;
+  bool _loading = false;
+  bool _exporting = false;
+  List<String> _parts = [];
+  String? _error;
+
+  Future<void> _chooseVideo() async {
+    try {
+      final picked = await _picker.pickVideo(source: ImageSource.gallery);
+      if (picked == null || !mounted) return;
+      setState(() {
+        _loading = true;
+        _error = null;
+        _parts = [];
+        _video = picked;
+      });
+      await _trimmer.loadVideo(videoFile: File(picked.path));
+      final duration = _trimmer.videoPlayerController?.value.duration ?? Duration.zero;
+      if (!mounted) return;
+      setState(() {
+        _duration = duration;
+        _loading = false;
+      });
+      if (duration == Duration.zero) {
+        setState(() => _error = 'Could not read this video duration. Please try another video.');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Could not open this video. Please choose another supported video.';
+      });
+    }
+  }
+
+  Future<String?> _savePart(int startMs, int endMs, int partNumber) async {
+    final completer = Completer<String?>();
+    await _trimmer.saveTrimmedVideo(
+      startValue: startMs.toDouble(),
+      endValue: endMs.toDouble(),
+      videoFolderName: 'RYZON_AI_Parts',
+      videoFileName: 'Part_${partNumber.toString().padLeft(2, '0')}',
+      onSave: (outputPath) {
+        if (!completer.isCompleted) completer.complete(outputPath);
+      },
+    );
+    return completer.future;
+  }
+
+  Future<void> _splitVideo() async {
+    if (_video == null || _duration <= Duration.zero || _exporting) return;
+    final totalMs = _duration.inMilliseconds;
+    final segmentMs = _clipSeconds * 1000;
+    final count = (totalMs / segmentMs).ceil();
+    setState(() {
+      _exporting = true;
+      _error = null;
+      _parts = [];
+    });
+    final outputs = <String>[];
+    try {
+      for (var i = 0; i < count; i++) {
+        final start = i * segmentMs;
+        final end = (start + segmentMs).clamp(0, totalMs);
+        if (end <= start) continue;
+        final path = await _savePart(start, end, i + 1);
+        if (path == null || path.isEmpty) {
+          throw Exception('Part ${i + 1} could not be saved.');
+        }
+        outputs.add(path);
+        if (mounted) setState(() => _parts = List<String>.from(outputs));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${outputs.length} video part(s) saved in RYZON_AI_Parts.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Export stopped: ${e}');
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  String _formatDuration(Duration value) {
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final hours = value.inHours;
+    return hours > 0 ? '${hours}:${minutes}:${seconds}' : '${minutes}:${seconds}';
+  }
+
+  @override
+  void dispose() {
+    _trimmer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final partCount = _duration.inMilliseconds == 0
+        ? 0
+        : (_duration.inMilliseconds / (_clipSeconds * 1000)).ceil();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Video / Movie Splitter')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text('Split a long video into short parts',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text(
+            'Choose your own video, select 30 or 60 seconds, and create sequential clips without skipping the timeline.',
+            style: TextStyle(color: Colors.white70, height: 1.4),
+          ),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed: _loading || _exporting ? null : _chooseVideo,
+            icon: const Icon(Icons.video_library_outlined),
+            label: const Text('Choose video from Gallery'),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+          ),
+          if (_loading) ...[
+            const SizedBox(height: 18),
+            const Center(child: CircularProgressIndicator()),
+            const Center(child: Text('Loading video...')),
+          ],
+          if (_video != null && !_loading) ...[
+            const SizedBox(height: 18),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(children: [
+                      Icon(Icons.movie_outlined, color: Color(0xFFC8B6FF)),
+                      SizedBox(width: 8),
+                      Text('Selected video', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ]),
+                    const SizedBox(height: 7),
+                    Text(_video!.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Text('Duration: ${_formatDuration(_duration)}',
+                        style: const TextStyle(color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text('Choose part length', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(value: 30, label: Text('30 seconds')),
+                ButtonSegment(value: 60, label: Text('60 seconds')),
+              ],
+              selected: {_clipSeconds},
+              onSelectionChanged: _exporting
+                  ? null
+                  : (selection) => setState(() => _clipSeconds = selection.first),
+            ),
+            const SizedBox(height: 14),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${partCount} part(s) will be created',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    if (partCount > 0)
+                      ...List<Widget>.generate(partCount, (index) {
+                        final start = Duration(seconds: index * _clipSeconds);
+                        final remaining = _duration - start;
+                        final length = remaining.inSeconds.clamp(0, _clipSeconds);
+                        return ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            radius: 16,
+                            child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
+                          ),
+                          title: Text('Part ${index + 1}'),
+                          subtitle: Text('${_formatDuration(start)} – ${_formatDuration(start + Duration(seconds: length))}'),
+                          trailing: Text('${length}s', style: const TextStyle(color: Colors.white70)),
+                        );
+                      }),
+                    const Text(
+                      'The final part may be shorter than the selected length.',
+                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: _exporting || partCount == 0 ? null : _splitVideo,
+              icon: const Icon(Icons.content_cut),
+              label: Text(_exporting ? 'Creating parts...' : 'Create ${partCount} parts'),
+              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+            ),
+            if (_exporting) ...[
+              const SizedBox(height: 12),
+              const LinearProgressIndicator(),
+              const SizedBox(height: 6),
+              Text('${_parts.length} / ${partCount} parts saved',
+                  textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+            ],
+            if (_parts.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const Text('Saved parts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+              ...List<Widget>.generate(_parts.length, (index) => ListTile(
+                    leading: const Icon(Icons.check_circle, color: Colors.greenAccent),
+                    title: Text('Part ${index + 1}'),
+                    subtitle: Text(_parts[index], maxLines: 1, overflow: TextOverflow.ellipsis),
+                  )),
+            ],
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: Colors.orangeAccent)),
+          ],
+          const SizedBox(height: 16),
+          const Text(
+            'Only split videos you own or have permission to edit and share. This first version saves clips to the app video folder; gallery visibility and device testing still need verification.',
+            style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
           ),
         ],
       ),
