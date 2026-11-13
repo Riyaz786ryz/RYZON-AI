@@ -254,7 +254,7 @@ class HomeScreen extends StatelessWidget {
                               if (feature.title == 'Make Cartoon Reels') {
                                 return const CartoonReelsScreen();
                               }
-                              if (feature.title == 'Photo to Cartoon') {
+                              if (feature.title == 'AI Movie Maker') {\n                                return const AiMovieStudioScreen();\n                              }\n                              if (feature.title == 'Photo to Cartoon') {
                                 return const PhotoCharacterScreen();
                               }
                               if (feature.title == 'Video / Movie Splitter') {
@@ -1869,6 +1869,130 @@ class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
           ],
         ),
       );
+}
+
+
+class AiMovieStudioScreen extends StatefulWidget {
+  const AiMovieStudioScreen({super.key});
+  @override
+  State<AiMovieStudioScreen> createState() => _AiMovieStudioScreenState();
+}
+
+class _AiMovieStudioScreenState extends State<AiMovieStudioScreen> {
+  final _title = TextEditingController();
+  final _story = TextEditingController();
+  String _style = '3D Movie';
+  String _language = 'Tamil';
+  int _scenes = 5;
+  bool _draftReady = false;
+
+  static const _pipeline = <(IconData, String, String)>[
+    (Icons.face_3_outlined, 'AI Character Creator', 'Create original characters from a photo or text prompt'),
+    (Icons.auto_stories_outlined, 'AI Story Writer', 'Prepare a story, scenes and dialogue'),
+    (Icons.view_carousel_outlined, 'AI Scene Generator', 'Break the story into editable scenes'),
+    (Icons.movie_filter_outlined, 'AI Movie Director', 'Plan camera angles, actions and expressions'),
+    (Icons.person_search_outlined, 'Character Memory', 'Keep character appearance consistent between scenes'),
+    (Icons.video_camera_back_outlined, 'AI Video Generator', 'Render approved scenes into video clips'),
+    (Icons.record_voice_over_outlined, 'AI Voice & Lip Sync', 'Plan Tamil, English and Hindi dialogue and lip sync'),
+    (Icons.music_note_outlined, 'AI Music & Effects', 'Add background music and sound effects'),
+    (Icons.tune_outlined, 'Movie Editor', 'Arrange clips, dialogue, music and subtitles'),
+    (Icons.ios_share_outlined, 'Export Movie', 'Prepare the finished MP4 for download and sharing'),
+  ];
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _story.dispose();
+    super.dispose();
+  }
+
+  void _prepareDraft() {
+    if (_story.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a short story idea first.')));
+      return;
+    }
+    setState(() => _draftReady = true);
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('RYZON AI Movie Studio')),
+    body: ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFF6843A8), Color(0xFF203C70)]),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('YOUR OWN AI FILM STUDIO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+            SizedBox(height: 8),
+            Text('From story idea to cartoon movie', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
+            Text('Prepare characters, scenes, voices, music and an export plan in one place.'),
+          ]),
+        ),
+        const SizedBox(height: 18),
+        TextField(controller: _title, decoration: const InputDecoration(labelText: 'Movie title', border: OutlineInputBorder())),
+        const SizedBox(height: 12),
+        TextField(controller: _story, minLines: 3, maxLines: 5, decoration: const InputDecoration(labelText: 'What is your story about?', hintText: 'Example: Two friends go on a magical adventure...', border: OutlineInputBorder())),
+        const SizedBox(height: 14),
+        DropdownButtonFormField<String>(
+          value: _style,
+          decoration: const InputDecoration(labelText: 'Cartoon style', border: OutlineInputBorder()),
+          items: ['3D Movie', 'Anime', 'Cute', 'Funny', 'Fantasy'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          onChanged: (v) => setState(() => _style = v ?? _style),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _language,
+          decoration: const InputDecoration(labelText: 'Dialogue language', border: OutlineInputBorder()),
+          items: ['Tamil', 'English', 'Hindi'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          onChanged: (v) => setState(() => _language = v ?? _language),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<int>(
+          value: _scenes,
+          decoration: const InputDecoration(labelText: 'Scene count', border: OutlineInputBorder()),
+          items: [3, 5, 8, 10].map((v) => DropdownMenuItem(value: v, child: Text('$v scenes'))).toList(),
+          onChanged: (v) => setState(() => _scenes = v ?? _scenes),
+        ),
+        const SizedBox(height: 20),
+        const Text('MOVIE CREATION WORKFLOW', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+        const SizedBox(height: 10),
+        for (var i = 0; i < _pipeline.length; i++)
+          Card(child: ListTile(
+            leading: CircleAvatar(child: Icon(_pipeline[i].$1)),
+            title: Text(_pipeline[i].$2),
+            subtitle: Text(_pipeline[i].$3),
+            trailing: Text('${i + 1}/10', style: const TextStyle(color: Colors.white60)),
+          )),
+        const SizedBox(height: 14),
+        FilledButton.icon(onPressed: _prepareDraft, icon: const Icon(Icons.edit_note), label: const Text('Prepare Movie Plan')),
+        if (_draftReady) ...[
+          const SizedBox(height: 14),
+          Card(child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('MOVIE PLAN DRAFT', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD9CCFF))),
+              const SizedBox(height: 8),
+              Text(_title.text.trim().isEmpty ? 'Untitled Movie' : _title.text.trim(), style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 6),
+              Text(_story.text.trim()),
+              const SizedBox(height: 8),
+              Text('$_style • $_language • $_scenes scenes'),
+              const SizedBox(height: 8),
+              const Text('This is a local planning draft only. AI image/video generation, voice, music, cloud saving and MP4 export are not connected yet.', style: TextStyle(color: Colors.orangeAccent)),
+            ]),
+          )),
+        ],
+        const SizedBox(height: 12),
+        const Text('Use only photos and voices you own or have permission to use. AI generation requires a secure backend and connected providers.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+      ],
+    ),
+  );
 }
 
 class FeatureScreen extends StatelessWidget {
