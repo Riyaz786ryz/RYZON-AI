@@ -58,6 +58,21 @@ const features = <StudioFeature>[
   StudioFeature('Trailer & Thumbnail Maker', 'Plan trailers, posters and covers', Icons.movie_filter_outlined),
   StudioFeature('Voice Recording Studio', 'Record authorized character voices', Icons.mic_none),
   StudioFeature('Movie Quality Checker', 'Review continuity, voice and lip sync', Icons.fact_check_outlined),
+  StudioFeature('Character Creator Studio', 'Customize original character looks', Icons.face_3_outlined),
+  StudioFeature('Animal & Creature Creator', 'Create animals and fantasy beings', Icons.pets_outlined),
+  StudioFeature('Action & Stunt Studio', 'Plan movement and action scenes', Icons.sports_martial_arts),
+  StudioFeature('Weather & Time Control', 'Set weather and time of day', Icons.cloud_outlined),
+  StudioFeature('AI Vehicle Creator', 'Add cars, aircraft and more', Icons.directions_car_outlined),
+  StudioFeature('Multi-Track Movie Editor', 'Edit video, voice and music tracks', Icons.tune),
+  StudioFeature('Social Media Export Studio', 'Prepare formats for social platforms', Icons.ondemand_video),
+  StudioFeature('Team Movie Studio', 'Collaborate on shared projects', Icons.people_alt_outlined),
+  StudioFeature('Multiple Story Endings', 'Create alternate story outcomes', Icons.account_tree_outlined),
+  StudioFeature('AI Transformation Studio', 'Transform character appearances', Icons.auto_awesome),
+  StudioFeature('My Asset Library', 'Reuse saved project assets', Icons.collections_bookmark_outlined),
+  StudioFeature('AI Lighting Studio', 'Control cinematic light and shadows', Icons.light_mode_outlined),
+  StudioFeature('Special Effects Studio', 'Plan magic, smoke and visual effects', Icons.bolt_outlined),
+  StudioFeature('Global Language Studio', 'Plan dubbing and subtitles', Icons.translate),
+  StudioFeature('RYZON AI Movie Theatre', 'Watch and share finished movies', Icons.local_movies_outlined),
 ];
 
 class HomeScreen extends StatelessWidget {
