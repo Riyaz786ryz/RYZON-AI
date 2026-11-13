@@ -183,7 +183,8 @@ These additional features were approved and added to the Flutter home screen as 
 - Only process videos the user owns or is authorized to edit and share; do not help bypass DRM or access controls.
 
 ## Implementation status
-- Make Cartoon Reels is highlighted on the Home Page; reel generation, editing, and social export remain planned integrations.
+- Make Cartoon Reels is highlighted on the Home Page and now opens an initial Flutter draft workflow: select multiple gallery photos, choose 15/30/60-second duration, cartoon style, mood, Tamil/English/Hindi language, add a caption, and inspect a vertical 9:16 preview. The draft summary is shown in-app; this is not yet a rendered MP4.
+- AI cartoon rendering, animated transitions, generated dialogue/voice, music, and final MP4 export remain future integrations requiring an AI/media pipeline and device testing.
 - Video / Movie Splitter is highlighted on the Home Page and now has an initial Flutter workflow: choose a gallery video, select 30- or 60-second segments, calculate sequential Part 1 / Part 2 / ... ranges, and export each segment using the native `video_trimmer` plugin.
 - The splitter shows saved output paths and progress. Verify output folder behavior, playback, file naming, edge cases, and device compatibility on a real Android device before treating it as production-ready.
 - Only process videos the user owns or is authorized to edit and share.
