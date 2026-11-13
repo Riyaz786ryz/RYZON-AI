@@ -161,3 +161,27 @@ These additional features were approved and added to the Flutter home screen as 
 - Team collaboration and cloud libraries require secure authentication, authorization, storage, and synchronization.
 - Obtain permission before using real people's likenesses or voices; explain when assets are sent to external providers.
 - Do not claim social publishing, voice cloning, AI generation, or collaboration is active until the corresponding integration is built and verified.
+
+---
+
+# Short-Form Video & Clip Splitter Features
+
+## 1. Make Cartoon Reels (Highlighted Home Feature)
+- Give this feature a prominent, visually highlighted position near the top of the Home Page.
+- Create vertical 9:16 short-form cartoon videos suitable for YouTube Shorts and Instagram Reels.
+- Include photo-to-cartoon reels, comedy, dance, romance, dialogue, multilingual voice, music, sound effects, and captions.
+- Provide preview, safe-area framing, export quality choices, and creator-controlled sharing.
+- Do not claim direct publishing integrations until they are implemented and verified.
+
+## 2. Video / Movie Splitter
+- Let the user select a video or movie from their device.
+- Offer 30-second and 60-second clip lengths, with automatic sequential segmentation.
+- Label clips clearly as Part 1, Part 2, Part 3, and so on; preserve the original order and avoid missing or duplicated time ranges.
+- Show each part's duration and preview; allow reordering, renaming, and selecting parts for export.
+- Export clips individually or as a package, with optional captions and a consistent part-number title card.
+- Handle the final shorter remainder clip and videos with unsupported formats or insufficient storage gracefully.
+- Only process videos the user owns or is authorized to edit and share; do not help bypass DRM or access controls.
+
+## Implementation status
+- Added Make Cartoon Reels as a highlighted Home Page entry and added both features to the studio navigation list.
+- The cards currently open roadmap placeholder screens. Actual reel generation and frame-accurate video splitting require implementation, suitable media-processing libraries/services, and device testing.
