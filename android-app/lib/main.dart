@@ -957,7 +957,8 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
   int _seconds = 30;
   String _style = '3D Movie';
   String _language = 'Tamil';
-  String _mood = 'Funny';
+  String _mood = 'Comedy';
+  String _reelType = 'Photo Cartoon';
   bool _draftReady = false;
 
   Future<void> _addPhotos() async {
@@ -1113,11 +1114,24 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _mood,
-            decoration: const InputDecoration(labelText: 'Reel mood', border: OutlineInputBorder()),
-            items: const ['Funny', 'Love', 'Adventure', 'Emotional', 'Dance']
+            value: _reelType,
+            decoration: const InputDecoration(labelText: 'Reel format', border: OutlineInputBorder()),
+            items: const ['Photo Cartoon', 'Talking Photo', 'Story Cartoon']
                 .map((value) => DropdownMenuItem(value: value, child: Text(value)))
                 .toList(),
+            onChanged: (value) => setState(() {
+              if (value != null) _reelType = value;
+              _draftReady = false;
+            }),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _mood,
+            decoration: const InputDecoration(labelText: 'Reel category / mood', border: OutlineInputBorder()),
+            items: const [
+              'Comedy', 'Love', 'Dance', 'Action', 'Kids Cartoon', 'Fantasy',
+              'Horror', 'Emotional', 'Family', 'Adventure'
+            ].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
             onChanged: (value) => setState(() {
               if (value != null) _mood = value;
               _draftReady = false;
@@ -1227,7 +1241,7 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
                     ]),
                     const SizedBox(height: 8),
                     Text('${_photos.length} photos • ${_seconds} seconds • 9:16'),
-                    Text('${_style} • ${_mood} • ${_language}'),
+                    Text('${_reelType} • ${_style} • ${_mood} • ${_language}'),
                     const SizedBox(height: 6),
                     const Text(
                       'This is a draft configuration only. Cartoon rendering, voice, music, and MP4 export will be connected in a later build.',
