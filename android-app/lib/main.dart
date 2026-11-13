@@ -130,7 +130,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(22),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => FeatureScreen(feature: features.first),
+                        builder: (_) => const CartoonReelsScreen(),
                       ),
                     ),
                     child: Container(
