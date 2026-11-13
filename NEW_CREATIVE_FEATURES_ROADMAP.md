@@ -201,3 +201,38 @@ These additional features were approved and added to the Flutter home screen as 
 - The screen builds an editable scene-outline template with scene title, location, action, dialogue, and camera angle fields.
 - Creators can add, remove, and move scenes up or down, then review the outline summary.
 - This is a local planning template, not AI-generated screenplay writing. Permanent project saving, AI story generation, character linking, and movie rendering are not connected yet; Android runtime testing remains required.
+
+---
+
+# Free & Premium Subscription Plan
+
+The user approved this proposed plan structure.
+
+## Free plan
+- Up to 5 AI cartoon reels per day, each up to 10 seconds.
+- 5 photo-to-cartoon uses per day.
+- 3 basic cartoon styles.
+- 3 stories per day.
+- Up to 2 characters.
+- 3 basic voices; Tamil, English, and Hindi; basic subtitles.
+- 3 background changes per day.
+- Video / Movie Splitter with 30-second and 60-second segments.
+- Storyboard Preview; 1 movie poster per day; basic video editing.
+- Export up to 720p.
+- Up to 5 projects.
+
+## Premium plan proposal
+- Longer videos (30 seconds, 60 seconds, and longer subject to generation capacity).
+- Higher AI generation credit limits (not an unlimited promise).
+- All cartoon styles; premium and emotional voices.
+- AI music and sound effects.
+- Higher-resolution export up to 4K only where supported.
+- Multi-character movie creation, AI lip sync, and video-to-cartoon.
+- Watermark-free export and expanded cloud storage.
+
+## Implementation status and safeguards
+- A Plans & Subscription screen is now linked from the Flutter Home Page app bar.
+- The screen displays the approved Free and Premium plan features and limits.
+- The Premium action is intentionally marked Coming Soon; it does not collect payment or claim an active subscription.
+- Daily quota tracking, persistent account usage, server-side enforcement, payment checkout, subscription verification, and AI provider connections are not implemented yet.
+- Final quotas, prices, and export capabilities must be configurable and validated against actual provider costs, device support, and service capacity. Do not promise unlimited generation or 4K on unsupported devices/services.
