@@ -288,7 +288,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
               if (_photo != null && !_busy && _error == null) ...[
                 const SizedBox(height: 22),
                 Text(
-                  '\${_faces.length} face(s) detected',
+                  '${_faces.length} face(s) detected',
                   style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
@@ -314,8 +314,8 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                           _selected.remove(index);
                         }
                       }),
-                      title: Text('Person \${index + 1}'),
-                      subtitle: Text('Face area: \${box.width.round()} × \${box.height.round()} px'),
+                      title: Text('Person ${index + 1}'),
+                      subtitle: Text('Face area: ${box.width.round()} × ${box.height.round()} px'),
                       secondary: const CircleAvatar(child: Icon(Icons.person_outline)),
                     ),
                   );
@@ -325,7 +325,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                   FilledButton.icon(
                     onPressed: _selected.isEmpty ? null : _confirmCharacters,
                     icon: const Icon(Icons.check_circle_outline),
-                    label: Text('Confirm \${_selected.length} character(s)'),
+                    label: Text('Confirm ${_selected.length} character(s)'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
@@ -348,7 +348,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Characters selected'),
         content: Text(
-          '\${_selected.length} person(s) selected. Cartoon character profile generation will be added in the next step.',
+          '${_selected.length} person(s) selected. Cartoon character profile generation will be added in the next step.',
         ),
         actions: [
           TextButton(
