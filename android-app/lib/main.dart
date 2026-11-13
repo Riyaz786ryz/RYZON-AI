@@ -40,6 +40,8 @@ class StudioFeature {
 }
 
 const features = <StudioFeature>[
+  StudioFeature('Make Cartoon Reels', 'Create vertical Shorts and Reels', Icons.video_camera_back_outlined),
+  StudioFeature('Video / Movie Splitter', 'Split videos into 30s or 60s parts', Icons.content_cut),
   StudioFeature('Photo to Cartoon', 'Upload photos and find people', Icons.face_retouching_natural),
   StudioFeature('AI Movie Maker', 'Build a story scene by scene', Icons.movie_creation_outlined),
   StudioFeature('Video to Cartoon', 'Cartoonize an existing video', Icons.video_library_outlined),
@@ -115,6 +117,55 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(height: 8),
                         Text('Create characters, plan scenes and build your own cartoon movies.'),
                       ],
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                sliver: SliverToBoxAdapter(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => FeatureScreen(feature: features.first),
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B45D8), Color(0xFF39266F)],
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFC8B6FF), width: 1.2),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x553F237C), blurRadius: 18, offset: Offset(0, 7)),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 27,
+                            backgroundColor: Color(0x33FFFFFF),
+                            child: Icon(Icons.video_camera_back_outlined, size: 29, color: Colors.white),
+                          ),
+                          SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('MAKE CARTOON REELS', style: TextStyle(fontSize: 11, letterSpacing: 1.1, fontWeight: FontWeight.w800, color: Color(0xFFE8DFFF))),
+                                SizedBox(height: 5),
+                                Text('Create viral-style short videos', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                                SizedBox(height: 4),
+                                Text('Vertical 9:16  •  YouTube Shorts  •  Instagram Reels', style: TextStyle(fontSize: 10, color: Colors.white70)),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, color: Colors.white, size: 17),
+                        ],
+                      ),
                     ),
                   ),
                 ),
