@@ -250,6 +250,9 @@ class HomeScreen extends StatelessWidget {
                               if (feature.title == 'Video / Movie Splitter') {
                                 return const VideoMovieSplitterScreen();
                               }
+                              if (feature.title == 'Storyboard Preview') {
+                                return const StoryboardPreviewScreen();
+                              }
                               return FeatureScreen(feature: feature);
                             },
                           ),
@@ -1257,6 +1260,381 @@ class _VideoMovieSplitterScreenState extends State<VideoMovieSplitterScreen> {
       ),
     );
   }
+}
+
+class StoryboardScene {
+  StoryboardScene({
+    required this.title,
+    required this.setting,
+    required this.action,
+    required this.dialogue,
+    required this.camera,
+  });
+
+  String title;
+  String setting;
+  String action;
+  String dialogue;
+  String camera;
+}
+
+class StoryboardPreviewScreen extends StatefulWidget {
+  const StoryboardPreviewScreen({super.key});
+
+  @override
+  State<StoryboardPreviewScreen> createState() => _StoryboardPreviewScreenState();
+}
+
+class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
+  final TextEditingController _movieTitle = TextEditingController();
+  final TextEditingController _storyPrompt = TextEditingController();
+  final List<StoryboardScene> _scenes = [];
+  int _sceneCount = 5;
+  String _style = '3D Movie';
+  String _mood = 'Adventure';
+  String _language = 'Tamil';
+  bool _draftCreated = false;
+
+  static const _styles = ['3D Movie', 'Anime', 'Cute', 'Funny', 'Fantasy'];
+  static const _moods = ['Adventure', 'Funny', 'Love', 'Emotional', 'Fantasy'];
+  static const _languages = ['Tamil', 'English', 'Hindi'];
+  static const _cameraShots = [
+    'Wide shot',
+    'Medium shot',
+    'Close-up',
+    'Over-the-shoulder',
+    'Tracking shot',
+    'Aerial view',
+  ];
+
+  void _createOutline() {
+    if (_storyPrompt.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('First, enter your story idea.')),
+      );
+      return;
+    }
+    final idea = _storyPrompt.text.trim();
+    setState(() {
+      _scenes
+        ..clear()
+        ..addAll(List<StoryboardScene>.generate(
+          _sceneCount,
+          (index) => StoryboardScene(
+            title: 'Scene ${index + 1}',
+            setting: index == 0 ? 'Opening location' : 'Story location ${index + 1}',
+            action: index == 0
+                ? 'Introduce the characters and the story idea: ${idea}'
+                : 'Continue the story. Add the important action for this scene.',
+            dialogue: 'Add or edit dialogue for this scene.',
+            camera: _cameraShots[index % _cameraShots.length],
+          ),
+        ));
+      _draftCreated = true;
+    });
+  }
+
+  void _addScene() {
+    setState(() {
+      _scenes.add(StoryboardScene(
+        title: 'Scene ${_scenes.length + 1}',
+        setting: 'New location',
+        action: 'Describe what happens in this scene.',
+        dialogue: 'Add dialogue here.',
+        camera: 'Medium shot',
+      ));
+    });
+  }
+
+  void _removeScene(int index) {
+    setState(() => _scenes.removeAt(index));
+  }
+
+  void _moveScene(int index, int offset) {
+    final target = index + offset;
+    if (target < 0 || target >= _scenes.length) return;
+    setState(() {
+      final scene = _scenes.removeAt(index);
+      _scenes.insert(target, scene);
+    });
+  }
+
+  void _reviewStoryboard() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Storyboard draft ready'),
+        content: Text(
+          '${_scenes.length} scene(s) are in your ${_style} ${_mood.toLowerCase()} outline. '
+          'Language: ${_language}. Review and edit each scene before any movie generation. '
+          'This is a local planning draft; AI story writing, project saving and video rendering are not connected yet.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Continue editing'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _movieTitle.dispose();
+    _storyPrompt.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Storyboard Preview')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const Text(
+              'Plan your movie scene by scene',
+              style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 7),
+            const Text(
+              'Write your idea, prepare a scene outline, then edit each scene before moving to production.',
+              style: TextStyle(color: Colors.white70, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _movieTitle,
+              decoration: const InputDecoration(
+                labelText: 'Movie title (optional)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.movie_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _storyPrompt,
+              minLines: 3,
+              maxLines: 6,
+              decoration: const InputDecoration(
+                labelText: 'Your story idea',
+                hintText: 'Example: Two friends discover a secret door in an old village...',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<int>(
+              value: _sceneCount,
+              decoration: const InputDecoration(
+                labelText: 'Number of scenes',
+                border: OutlineInputBorder(),
+              ),
+              items: [3, 5, 8, 10]
+                  .map((count) => DropdownMenuItem(
+                        value: count,
+                        child: Text('${count} scenes'),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _sceneCount = value);
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _style,
+              decoration: const InputDecoration(
+                labelText: 'Cartoon style',
+                border: OutlineInputBorder(),
+              ),
+              items: _styles.map((value) => DropdownMenuItem(
+                value: value, child: Text(value),
+              )).toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _style = value);
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _mood,
+              decoration: const InputDecoration(
+                labelText: 'Story mood',
+                border: OutlineInputBorder(),
+              ),
+              items: _moods.map((value) => DropdownMenuItem(
+                value: value, child: Text(value),
+              )).toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _mood = value);
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _language,
+              decoration: const InputDecoration(
+                labelText: 'Dialogue language',
+                border: OutlineInputBorder(),
+              ),
+              items: _languages.map((value) => DropdownMenuItem(
+                value: value, child: Text(value),
+              )).toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _language = value);
+              },
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: _createOutline,
+              icon: const Icon(Icons.auto_awesome),
+              label: Text(_draftCreated ? 'Rebuild scene outline' : 'Create scene outline'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+            ),
+            if (_draftCreated) ...[
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _movieTitle.text.trim().isEmpty
+                          ? 'Your storyboard'
+                          : _movieTitle.text.trim(),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Text('${_scenes.length} scenes',
+                      style: const TextStyle(color: Colors.white70)),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text('${_style} • ${_mood} • ${_language}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12)),
+              const SizedBox(height: 10),
+              ...List<Widget>.generate(_scenes.length, (index) {
+                final scene = _scenes[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 17,
+                              child: Text('${index + 1}'),
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: TextFormField(
+                                key: ValueKey('scene-title-${index}-${scene.title}'),
+                                initialValue: scene.title,
+                                decoration: const InputDecoration(
+                                  labelText: 'Scene title',
+                                  isDense: true,
+                                  border: OutlineInputBorder(),
+                                ),
+                                onChanged: (value) => scene.title = value,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Move scene up',
+                              onPressed: index == 0 ? null : () => _moveScene(index, -1),
+                              icon: const Icon(Icons.arrow_upward),
+                            ),
+                            IconButton(
+                              tooltip: 'Move scene down',
+                              onPressed: index == _scenes.length - 1
+                                  ? null
+                                  : () => _moveScene(index, 1),
+                              icon: const Icon(Icons.arrow_downward),
+                            ),
+                            IconButton(
+                              tooltip: 'Remove scene',
+                              onPressed: () => _removeScene(index),
+                              icon: const Icon(Icons.delete_outline),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          key: ValueKey('scene-setting-${index}-${scene.setting}'),
+                          initialValue: scene.setting,
+                          decoration: const InputDecoration(
+                            labelText: 'Location / world',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (value) => scene.setting = value,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          key: ValueKey('scene-action-${index}-${scene.action}'),
+                          initialValue: scene.action,
+                          minLines: 2,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'What happens?',
+                            border: OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                          onChanged: (value) => scene.action = value,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          key: ValueKey('scene-dialogue-${index}-${scene.dialogue}'),
+                          initialValue: scene.dialogue,
+                          minLines: 2,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'Dialogue',
+                            border: OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                          onChanged: (value) => scene.dialogue = value,
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String>(
+                          value: scene.camera,
+                          decoration: const InputDecoration(
+                            labelText: 'Camera angle',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: _cameraShots.map((shot) => DropdownMenuItem(
+                            value: shot, child: Text(shot),
+                          )).toList(),
+                          onChanged: (value) {
+                            if (value != null) setState(() => scene.camera = value);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              OutlinedButton.icon(
+                onPressed: _addScene,
+                icon: const Icon(Icons.add),
+                label: const Text('Add another scene'),
+              ),
+              const SizedBox(height: 10),
+              FilledButton.icon(
+                onPressed: _reviewStoryboard,
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Review storyboard'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Text(
+              'This first version creates an editable scene-outline template from your inputs. It does not write an AI-generated screenplay, save a permanent project, or render a movie yet.',
+              style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+            ),
+          ],
+        ),
+      );
 }
 
 class FeatureScreen extends StatelessWidget {
