@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -565,7 +566,7 @@ class _VideoMovieSplitterScreenState extends State<VideoMovieSplitterScreen> {
     try {
       for (var i = 0; i < count; i++) {
         final start = i * segmentMs;
-        final end = (start + segmentMs).clamp(0, totalMs);
+        final end = (start + segmentMs).clamp(0, totalMs).toInt();
         if (end <= start) continue;
         final path = await _savePart(start, end, i + 1);
         if (path == null || path.isEmpty) {
@@ -677,7 +678,7 @@ class _VideoMovieSplitterScreenState extends State<VideoMovieSplitterScreen> {
                       ...List<Widget>.generate(partCount, (index) {
                         final start = Duration(seconds: index * _clipSeconds);
                         final remaining = _duration - start;
-                        final length = remaining.inSeconds.clamp(0, _clipSeconds);
+                        final length = remaining.inSeconds.clamp(0, _clipSeconds).toInt();
                         return ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
