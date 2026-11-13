@@ -1,1 +1,55 @@
+# RYZON AI Backend
 
+## Purpose
+This file defines the server-side foundation required for secure accounts, daily plan quotas, AI job tracking, and subscription entitlements. This is a design contract, not a deployed backend.
+
+## Security rules
+- Derive account ID from a verified authentication token; never trust a client-supplied user ID or plan.
+- Use server time and a documented timezone policy for daily quota windows.
+- Enforce quota atomically in the database to prevent concurrent requests exceeding limits.
+- Reserve quota when a generation job is accepted; charge only after successful completion.
+- Release reservations after confirmed failure or cancellation under the retry policy.
+- Grant Premium only from a verified store entitlement, never a client-side toggle.
+- Keep provider keys on the server; never ship secrets in the app or repository.
+
+## Proposed Free limits
+| Feature | Daily limit |
+| --- | ---: |
+| Cartoon reels | 5 |
+| Photo-to-cartoon | 5 |
+| Stories | 3 |
+| Background changes | 3 |
+| Movie posters | 1 |
+
+The product proposal also includes 10-second Free reels, up to 2 characters, 3 basic styles, 3 basic voices, Tamil/English/Hindi, basic subtitles, 30/60-second splitter, storyboard preview, basic editing, 720p export, and up to 5 projects. These are requirements only; enforcement is not active.
+
+## Proposed API
+All endpoints use HTTPS. Authenticated endpoints require a verified bearer token.
+
+- GET /v1/me/usage — return the authenticated account's plan, quota window, remaining counts, and reservations. Server calculates the window.
+- POST /v1/generations — authenticate, verify entitlement, validate input, atomically reserve quota, create a job, and return its ID.
+- GET /v1/generations/{jobId} — return safe job status only to the owning account.
+- POST /v1/generations/{jobId}/cancel — cancel an owned job and release reservation only after confirmed cancellation.
+- POST /v1/store/google-play/verify — verify purchase token with Google Play before granting entitlement. Validate product, package, state, expiry, refund/revocation, and acknowledgement.
+
+## Suggested data model
+- accounts: internal account ID, auth provider subject, created timestamp, status.
+- plan_entitlements: account ID, plan, source, store product ID, verified state, valid-from, valid-until.
+- quota_windows: account ID, window start/end, timezone policy.
+- quota_usage: account ID, feature key, window ID, successful count, reserved count.
+- generation_jobs: job ID, account ID, feature key, status, reservation ID, timestamps, provider reference.
+- quota_reservations: reservation ID, job ID, account ID, feature key, state, timestamps.
+- audit_events: minimal security and entitlement changes; never store raw secrets.
+
+Use database transactions, unique constraints for account/window/feature reservation operations, and idempotency keys for job creation and purchase verification.
+
+## Required tests before launch
+- Simultaneous requests at the final remaining quota slot.
+- Failed, cancelled, retried, and duplicate generation requests.
+- Client clock/timezone manipulation.
+- Expired, refunded, revoked, pending, and duplicate store purchases.
+- Cross-account job access attempts.
+- Account deletion and data retention.
+
+## Not implemented
+No backend framework, database, authentication provider, AI provider, Google Play Billing integration, production secrets, deployment, or live API is configured. Choose these before implementing executable services.
