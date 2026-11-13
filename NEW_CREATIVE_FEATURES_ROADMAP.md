@@ -194,3 +194,10 @@ These additional features were approved and added to the Flutter home screen as 
 - Each profile includes an editable character name, cartoon style, voice preference, optional outfit/appearance notes, and a continuity-lock switch.
 - The source photo is shown as a reference; face-specific crop thumbnails are not implemented yet.
 - Profile data is currently held in screen memory only. Permanent project storage, generated character artwork, voice generation, and cross-scene AI identity enforcement are not connected or device-tested yet.
+
+## Storyboard Preview – initial Flutter workflow
+- The Home Page Storyboard Preview card now opens an editable storyboard screen.
+- Creators can enter a movie title and story idea, choose 3/5/8/10 scenes, cartoon style, mood, and dialogue language.
+- The screen builds an editable scene-outline template with scene title, location, action, dialogue, and camera angle fields.
+- Creators can add, remove, and move scenes up or down, then review the outline summary.
+- This is a local planning template, not AI-generated screenplay writing. Permanent project saving, AI story generation, character linking, and movie rendering are not connected yet; Android runtime testing remains required.
