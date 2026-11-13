@@ -270,3 +270,10 @@ The approved product direction is a unified, scene-based cartoon filmmaking work
 - The draft is not yet AI-generated, permanently saved, or exported as a movie.
 - No Google Flow account/API or other AI provider is connected. Provider selection, secure backend, authentication, cost/credit controls, consent checks, generation queue, media storage, editing/rendering pipeline, and real-device tests remain required.
 - RYZON AI must not claim to be Google Flow or imply Google's models are included. Provider terms, output rights, privacy, and regional availability must be reviewed before integration.
+
+
+## Expanded Cartoon Reels categories (2026-11-13)
+- Added selectable reel formats: Photo Cartoon, Talking Photo, and Story Cartoon.
+- Expanded the category/mood selector to Comedy, Love, Dance, Action, Kids Cartoon, Fantasy, Horror, Emotional, Family, and Adventure.
+- The selected reel format and category are included in the local draft summary.
+- These are planning options in the Flutter UI. Actual AI animation, talking-photo lip sync, generated audio, and MP4 rendering still require provider/backend integration and device testing.
