@@ -1,0 +1,54 @@
+name: Build RYZON AI Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "android-app/**"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform scaffold if missing
+        working-directory: android-app
+        shell: bash
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org com.ryzonai --project-name ryzon_ai .
+          fi
+
+      - name: Install Flutter dependencies
+        working-directory: android-app
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: android-app
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ryzon-ai-android-apk
+          path: android-app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
