@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "46899409662-8j3uqf4jn2trroavsrk14u6llgk7tmf9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ryzonai.ryzon_ai",
+            "certificate_hash": "b80e2901b03e96191310afb7aa3e9dfbb00bd4ad"
+          }
+        },
+        {
           "client_id": "46899409662-pt528q8g9gsrhaks41rs3m3h887gbnu9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
