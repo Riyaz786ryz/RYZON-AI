@@ -2,12 +2,19 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_trimmer/video_trimmer.dart';
 
-void main() => runApp(const RyzonAiApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const RyzonAiApp());
+}
 
 class RyzonAiApp extends StatelessWidget {
   const RyzonAiApp({super.key});
@@ -31,7 +38,113 @@ class RyzonAiApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const HomeScreen(),
+        home: const AuthGate(),
+      );
+}
+
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Could not check your account: ${snapshot.error}'),
+                ),
+              ),
+            );
+          }
+          return snapshot.data == null ? const GoogleSignInScreen() : const HomeScreen();
+        },
+      );
+}
+
+class GoogleSignInScreen extends StatefulWidget {
+  const GoogleSignInScreen({super.key});
+
+  @override
+  State<GoogleSignInScreen> createState() => _GoogleSignInScreenState();
+}
+
+class _GoogleSignInScreenState extends State<GoogleSignInScreen> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _signIn() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        if (mounted) setState(() => _busy = false);
+        return;
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = 'Google sign-in failed. Please try again. ($error)';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.auto_awesome, size: 72, color: Color(0xFFC8B6FF)),
+                  const SizedBox(height: 18),
+                  const Text('RYZON AI', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Sign in with Google to enter your AI cartoon studio.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 26),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _busy ? null : _signIn,
+                      icon: _busy
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.login),
+                      label: Text(_busy ? 'Signing in…' : 'Continue with Google'),
+                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 16),
+                    Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent)),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
       );
 }
 
@@ -88,6 +201,14 @@ class HomeScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('RYZON AI', style: TextStyle(fontWeight: FontWeight.w800)),
           actions: [
+            IconButton(
+              tooltip: 'Sign out',
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                await GoogleSignIn().signOut();
+              },
+              icon: const Icon(Icons.logout),
+            ),
             IconButton(
               tooltip: 'Plans & Subscription',
               onPressed: () => Navigator.of(context).push(
