@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "46899409662",
+    "project_id": "ryzon-ai",
+    "storage_bucket": "ryzon-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46899409662:android:39d49153af1fb2bf986baf",
+        "android_client_info": {
+          "package_name": "com.ryzonai.ryzon_ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "46899409662-pt528q8g9gsrhaks41rs3m3h887gbnu9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ryzonai.ryzon_ai",
+            "certificate_hash": "427e24a84574ab1e17060d720f4486f54cfc4e8d"
+          }
+        },
+        {
+          "client_id": "46899409662-88bnntl3brmftiq93oso6v1g0eifgcke.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUeqy-Ar4tIbp-l3jgRmVcGmwIMPswg4I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "46899409662-88bnntl3brmftiq93oso6v1g0eifgcke.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
