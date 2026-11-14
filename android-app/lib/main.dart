@@ -254,7 +254,10 @@ class HomeScreen extends StatelessWidget {
                               if (feature.title == 'Make Cartoon Reels') {
                                 return const CartoonReelsScreen();
                               }
-                              if (feature.title == 'AI Movie Maker') {\n                                return const AiMovieStudioScreen();\n                              }\n                              if (feature.title == 'Photo to Cartoon') {
+                              if (feature.title == 'AI Movie Maker') {
+                                return const AiMovieStudioScreen();
+                              }
+                              if (feature.title == 'Photo to Cartoon') {
                                 return const PhotoCharacterScreen();
                               }
                               if (feature.title == 'Video / Movie Splitter') {
