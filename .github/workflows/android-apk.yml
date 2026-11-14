@@ -56,6 +56,19 @@ jobs:
         working-directory: android-app
         run: flutter pub get
 
+      - name: Create Android debug keystore and print matching SHA-1
+        working-directory: android-app
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias AndroidDebugKey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          cd android
+          ./gradlew signingReport | tee "$GITHUB_WORKSPACE/signing-report.txt"
+          echo "----- SHA-1 for this APK build -----"
+          grep -E 'SHA1:|SHA-1:' "$GITHUB_WORKSPACE/signing-report.txt" | head -n 1
+
       - name: Build release APK
         working-directory: android-app
         run: flutter build apk --release
