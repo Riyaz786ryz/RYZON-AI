@@ -53,8 +53,8 @@ jobs:
           settings_text = settings.read_text()
           if "com.google.gms.google-services" not in settings_text:
               settings_text, count = re.subn(
-                  r"(plugins\s*\{)",
-                  r'\1\n    id("com.google.gms.google-services") version "4.4.2" apply false',
+                  r"(plugins\\s*\\{)",
+                  r'\\1\\n    id("com.google.gms.google-services") version "4.4.2" apply false',
                   settings_text,
                   count=1
               )
@@ -65,8 +65,8 @@ jobs:
           app_text = app_gradle.read_text()
           if "com.google.gms.google-services" not in app_text:
               app_text, count = re.subn(
-                  r"(plugins\s*\{)",
-                  r'\1\n    id("com.google.gms.google-services")',
+                  r"(plugins\\s*\\{)",
+                  r'\\1\\n    id("com.google.gms.google-services")',
                   app_text,
                   count=1
               )
@@ -84,7 +84,7 @@ jobs:
           import re
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           source = manifest.read_text()
-          source, count = re.subn(r'<application\b([^>]*)>', lambda m: '<application' + re.sub(r'android:label="[^"]*"', 'android:label="RYZON AI"', m.group(1)) + (' android:label="RYZON AI"' if 'android:label=' not in m.group(1) else '') + '>', source, count=1)
+          source, count = re.subn(r'<application\\b([^>]*)>', lambda m: '<application' + re.sub(r'android:label="[^"]*"', 'android:label="RYZON AI"', m.group(1)) + (' android:label="RYZON AI"' if 'android:label=' not in m.group(1) else '') + '>', source, count=1)
           if count != 1:
               raise SystemExit("Could not find Android application tag")
           manifest.write_text(source)
@@ -94,7 +94,14 @@ jobs:
         working-directory: android-app
         run: flutter pub get
 
-      - name: Create Android debug keystore and print matching SHA-1
+      # Keep one test-only debug key across CI runs so Firebase sees a stable SHA-1.
+      - name: Restore stable test signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: ryzon-ai-test-debug-keystore-v1
+
+      - name: Create test debug keystore and print SHA-1
         working-directory: android-app
         shell: bash
         run: |
@@ -104,17 +111,24 @@ jobs:
           fi
           cd android
           ./gradlew signingReport | tee "$GITHUB_WORKSPACE/signing-report.txt"
-          echo "----- SHA-1 for this APK build -----"
-          grep -E 'SHA1:|SHA-1:' "$GITHUB_WORKSPACE/signing-report.txt" | head -n 1
+          echo "----- SHA-1 for the stable test APK key -----"
+          awk '/Variant: debug/{found=1} found && /SHA1:|SHA-1:/{print; exit}' "$GITHUB_WORKSPACE/signing-report.txt"
 
-      - name: Build release APK
+      - name: Build test APK
         working-directory: android-app
-        run: flutter build apk --release
+        run: flutter build apk --debug
+
+      - name: Verify APK signing certificate
+        working-directory: android-app
+        shell: bash
+        run: |
+          APK="build/app/outputs/flutter-apk/app-debug.apk"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner" verify --print-certs "$APK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ryzon-ai-android-apk
-          path: android-app/build/app/outputs/flutter-apk/app-release.apk
+          path: android-app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
