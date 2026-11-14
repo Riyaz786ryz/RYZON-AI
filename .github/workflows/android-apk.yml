@@ -53,8 +53,8 @@ jobs:
           settings_text = settings.read_text()
           if "com.google.gms.google-services" not in settings_text:
               settings_text, count = re.subn(
-                  r"(plugins\\s*\\{)",
-                  r'\\1\\n    id("com.google.gms.google-services") version "4.4.2" apply false',
+                  r"(plugins\s*\{)",
+                  r'\1\n    id("com.google.gms.google-services") version "4.4.2" apply false',
                   settings_text,
                   count=1
               )
@@ -65,8 +65,8 @@ jobs:
           app_text = app_gradle.read_text()
           if "com.google.gms.google-services" not in app_text:
               app_text, count = re.subn(
-                  r"(plugins\\s*\\{)",
-                  r'\\1\\n    id("com.google.gms.google-services")',
+                  r"(plugins\s*\{)",
+                  r'\1\n    id("com.google.gms.google-services")',
                   app_text,
                   count=1
               )
@@ -84,7 +84,7 @@ jobs:
           import re
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           source = manifest.read_text()
-          source, count = re.subn(r'<application\\b([^>]*)>', lambda m: '<application' + re.sub(r'android:label="[^"]*"', 'android:label="RYZON AI"', m.group(1)) + (' android:label="RYZON AI"' if 'android:label=' not in m.group(1) else '') + '>', source, count=1)
+          source, count = re.subn(r'<application\b([^>]*)>', lambda m: '<application' + re.sub(r'android:label="[^"]*"', 'android:label="RYZON AI"', m.group(1)) + (' android:label="RYZON AI"' if 'android:label=' not in m.group(1) else '') + '>', source, count=1)
           if count != 1:
               raise SystemExit("Could not find Android application tag")
           manifest.write_text(source)
