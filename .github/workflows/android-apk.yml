@@ -33,9 +33,47 @@ jobs:
         working-directory: android-app
         shell: bash
         run: |
-          if [ ! -d android ]; then
+          if [ ! -f android/settings.gradle ] && [ ! -f android/settings.gradle.kts ]; then
             flutter create --platforms=android --org com.ryzonai --project-name ryzon_ai .
           fi
+
+      - name: Configure Google Services Gradle plugin
+        working-directory: android-app
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          settings = next((p for p in [Path("android/settings.gradle.kts"), Path("android/settings.gradle")] if p.exists()), None)
+          app_gradle = next((p for p in [Path("android/app/build.gradle.kts"), Path("android/app/build.gradle")] if p.exists()), None)
+          if settings is None or app_gradle is None:
+              raise SystemExit("Android Gradle scaffold is incomplete")
+
+          settings_text = settings.read_text()
+          if "com.google.gms.google-services" not in settings_text:
+              settings_text, count = re.subn(
+                  r"(plugins\\s*\\{)",
+                  r'\\1\\n    id("com.google.gms.google-services") version "4.4.2" apply false',
+                  settings_text,
+                  count=1
+              )
+              if count != 1:
+                  raise SystemExit("Could not locate plugins block in settings.gradle")
+              settings.write_text(settings_text)
+
+          app_text = app_gradle.read_text()
+          if "com.google.gms.google-services" not in app_text:
+              app_text, count = re.subn(
+                  r"(plugins\\s*\\{)",
+                  r'\\1\\n    id("com.google.gms.google-services")',
+                  app_text,
+                  count=1
+              )
+              if count != 1:
+                  raise SystemExit("Could not locate plugins block in app/build.gradle")
+              app_gradle.write_text(app_text)
+          PY
 
       - name: Set Android launcher app name
         working-directory: android-app
