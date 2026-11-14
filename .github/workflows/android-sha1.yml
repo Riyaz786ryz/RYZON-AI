@@ -29,7 +29,7 @@ jobs:
         working-directory: android-app
         shell: bash
         run: |
-          if [ ! -d android ]; then
+          if [ ! -f android/settings.gradle ] && [ ! -f android/settings.gradle.kts ]; then
             flutter create --platforms=android --org com.ryzonai --project-name ryzon_ai .
           fi
 
