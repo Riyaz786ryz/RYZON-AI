@@ -37,6 +37,20 @@ jobs:
         working-directory: android-app
         run: flutter pub get
 
+      - name: Create Android debug keystore
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \\
+              -keystore "$HOME/.android/debug.keystore" \\
+              -storepass android \\
+              -alias AndroidDebugKey \\
+              -keypass android \\
+              -keyalg RSA -keysize 2048 -validity 10000 \\
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
       - name: Print Android signing fingerprints
         working-directory: android-app/android
         shell: bash
