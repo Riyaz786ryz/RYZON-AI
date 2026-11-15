@@ -148,6 +148,56 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen> {
       );
 }
 
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Profile')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 48,
+                backgroundImage: user?.photoURL != null
+                    ? NetworkImage(user!.photoURL!)
+                    : null,
+                child: user?.photoURL == null
+                    ? const Icon(Icons.person, size: 48)
+                    : null,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                (user?.displayName?.trim().isNotEmpty ?? false)
+                    ? user!.displayName!
+                    : 'RYZON AI User',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                user?.email ?? 'Google account email unavailable',
+                style: const TextStyle(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Signed in with Google',
+                style: TextStyle(color: Colors.greenAccent),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class StudioFeature {
   const StudioFeature(this.title, this.subtitle, this.icon);
   final String title;
@@ -201,6 +251,15 @@ class HomeScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('RYZON AI', style: TextStyle(fontWeight: FontWeight.w800)),
           actions: [
+            IconButton(
+              tooltip: 'My Profile',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ProfileScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.account_circle_outlined),
+            ),
             IconButton(
               tooltip: 'Sign out',
               onPressed: () async {
