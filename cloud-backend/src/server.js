@@ -1,10 +1,14 @@
 import http from "node:http";
-import { timingSafeEqual } from "node:crypto";
+import { initializeApp, applicationDefault } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-const BACKEND_TOKEN = process.env.RYZON_BACKEND_TOKEN;
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "ryzon-ai";
+
+initializeApp({ credential: applicationDefault(), projectId: FIREBASE_PROJECT_ID });
+const firebaseAuth = getAuth();
 const MAX_BODY_BYTES = 32 * 1024;
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 10;
@@ -40,13 +44,15 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function isAuthorized(req) {
+async function verifyUser(req) {
   const header = req.headers.authorization || "";
-  const supplied = Buffer.from(header.startsWith("Bearer ") ? header.slice(7) : "");
-  const expected = Buffer.from(BACKEND_TOKEN || "");
-  return expected.length >= 32 &&
-    supplied.length === expected.length &&
-    timingSafeEqual(supplied, expected);
+  if (!header.startsWith("Bearer ")) return null;
+  try {
+    const decoded = await firebaseAuth.verifyIdToken(header.slice(7), true);
+    return { uid: decoded.uid, email: decoded.email || null };
+  } catch {
+    return null;
+  }
 }
 
 function allowRequest(req) {
@@ -130,8 +136,9 @@ const server = http.createServer(async (req, res) => {
     return send(res, 404, { error: "Route not found" });
   }
 
-  if (!isAuthorized(req)) {
-    return send(res, 401, { error: "Unauthorized" });
+  const user = await verifyUser(req);
+  if (!user) {
+    return send(res, 401, { error: "Valid Firebase sign-in required" });
   }
   if (!allowRequest(req)) {
     return send(res, 429, { error: "Too many requests. Please wait and try again." });
@@ -150,6 +157,7 @@ const server = http.createServer(async (req, res) => {
     const result = await generateWithGemini(task.instruction(input));
     return send(res, 200, {
       ok: true,
+      userId: user.uid,
       task: taskName,
       model: GEMINI_MODEL,
       result,
@@ -170,10 +178,8 @@ if (!GEMINI_API_KEY) {
   console.error("Missing GEMINI_API_KEY. Configure it in the hosting environment.");
   process.exit(1);
 }
-if (!BACKEND_TOKEN || BACKEND_TOKEN.length < 32) {
-  console.error("RYZON_BACKEND_TOKEN must be at least 32 characters.");
-  process.exit(1);
-}
+// Firebase Admin uses Application Default Credentials from the hosting platform.
+
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`RYZON AI backend listening on port ${PORT}`);
