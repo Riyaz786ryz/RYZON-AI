@@ -1,55 +1,25 @@
-# RYZON AI Cloud Backend — Gemini starter
+# RYZON AI Cloud Backend — Firebase-authenticated Gemini starter
 
-This is the first executable backend milestone. It connects server-side text tasks to the Gemini Developer API without putting the Gemini API key in the Android app or GitHub.
+This is an executable development backend for text-based cartoon planning. It verifies Firebase ID tokens with Firebase Admin before accepting AI requests.
 
-## Included endpoints
-
-- `GET /health` — service health check.
+## Endpoints
+- `GET /health` — service health.
 - `POST /v1/ai/story` — create a story.
 - `POST /v1/ai/dialogue` — create character dialogue.
-- `POST /v1/ai/scenes` — turn a story into a text storyboard.
+- `POST /v1/ai/scenes` — create a text storyboard.
 
-All AI endpoints require `Authorization: Bearer <RYZON_BACKEND_TOKEN>`. Requests are size-limited and rate-limited per process/IP. Provider error bodies and secrets are not returned to clients.
+AI endpoints require `Authorization: Bearer <Firebase ID token>`. The Android app must obtain the token from the signed-in Firebase user using `FirebaseAuth.instance.currentUser!.getIdToken()`. Never embed a shared backend token or provider API key in the APK.
 
-## Local setup
+## Server configuration
+Requires Node.js 20+, Firebase Admin Application Default Credentials for project `ryzon-ai`, and a Gemini API key.
+Set `GEMINI_API_KEY`, `FIREBASE_PROJECT_ID=ryzon-ai`, and `GEMINI_MODEL` in the hosting platform. On Google Cloud hosting, attach a dedicated service account with only the required Firebase token-verification permissions. Do not commit service-account JSON or real secrets.
 
-Requires Node.js 20 or newer.
+Run `npm install`, `npm run check`, then `npm start`.
 
-1. Copy `.env.example` to `.env`.
-2. Create a Gemini API key in Google AI Studio.
-3. Set `GEMINI_API_KEY` in the local/server environment. Do not commit the real `.env`.
-4. Generate a random token of at least 32 characters for `RYZON_BACKEND_TOKEN`.
-5. Run:
-
-```bash
-npm run check
-npm start
-```
-
-Test health with `GET http://localhost:8080/health`. Test an AI endpoint with a JSON POST and the bearer token.
-
-Example story request:
-
-```json
-{
-  "idea": "A clever village child helps a lost baby elephant find its family",
-  "language": "Tamil",
-  "genre": "Adventure",
-  "audience": "Kids"
-}
-```
-
-## Model and free-tier notes
-
-The default model is `gemini-3.8-flash`; change `GEMINI_MODEL` in the hosting environment if Google changes availability or if a different eligible model is needed. Model availability and free-tier quotas depend on the Google AI Studio project and can change. Review the official [models list](https://ai.google.dev/gemini-api/docs/models) and [pricing/free-tier details](https://ai.google.dev/gemini-api/docs/pricing).
-
-Google's free tier may use submitted content to improve its products. Do not send private user photos, sensitive personal data, or confidential content through a free-tier project without reviewing Google's current terms and obtaining appropriate user consent.
-
-## Important launch limitations
-
-- This is a development starter, not a deployed production backend.
-- The bearer token is a temporary development gate, not per-user authentication. Replace it with verified user JWTs before any public release. Never embed this shared token in a public APK.
-- In-memory rate limits reset on restart and are not a substitute for atomic account quotas.
-- No database, persistent jobs, user accounts, subscriptions, payments, image generation, audio generation, or video generation is included yet.
-- Do not enable public app access until HTTPS hosting, user authentication, per-account quota enforcement, monitoring, and privacy controls are implemented.
-- The Android app is not connected to this backend yet. Deployment and a secure app-auth flow are the next integration steps.
+## Important status
+- Firebase ID token verification: implemented in backend source.
+- Gemini story/dialogue/storyboard text endpoints: implemented in backend source.
+- Backend deployment, hosting credentials, Gemini key, and HTTPS URL: not configured here.
+- Android client integration: not yet implemented.
+- Per-user quotas, database, private media storage, image generation, speech, lip-sync, and rendered AI video: not implemented.
+- The backend must not be exposed publicly until deployed with HTTPS, verified Firebase credentials, quotas, monitoring, and privacy controls.
