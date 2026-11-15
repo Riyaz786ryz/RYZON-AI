@@ -9,6 +9,10 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_trimmer/video_trimmer.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -488,11 +492,11 @@ class _FeatureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(feature.icon, size: 30, color: const Color(0xFFC8B6FF)),
-                const Spacer(),
-                Text(feature.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Icon(feature.icon, size: 28, color: const Color(0xFFC8B6FF)),
+                const SizedBox(height: 10),
+                Text(feature.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 5),
-                Text(feature.subtitle, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                Text(feature.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60, fontSize: 10)),
               ],
             ),
           ),
@@ -1143,6 +1147,8 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
   String _mood = 'Comedy';
   String _reelType = 'Photo Cartoon';
   bool _draftReady = false;
+  bool _generatingVideo = false;
+  String? _generatedVideoPath;
 
   Future<void> _addPhotos() async {
     try {
@@ -1151,6 +1157,7 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
       setState(() {
         _photos.addAll(picked);
         _draftReady = false;
+        _generatedVideoPath = null;
       });
     } catch (_) {
       if (!mounted) return;
@@ -1164,6 +1171,7 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
     setState(() {
       _photos.removeAt(index);
       _draftReady = false;
+      _generatedVideoPath = null;
     });
   }
 
@@ -1175,6 +1183,62 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
       return;
     }
     setState(() => _draftReady = true);
+  }
+
+  String _quoteFfmpeg(String value) => "'${value.replaceAll("'", "'\\''")}'";
+
+  Future<void> _generateSlideshowVideo() async {
+    if (_photos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('First add at least one photo for your reel.')),
+      );
+      return;
+    }
+    setState(() {
+      _generatingVideo = true;
+      _generatedVideoPath = null;
+    });
+    try {
+      final outputDirectory = await getApplicationDocumentsDirectory();
+      final outputPath = '${outputDirectory.path}/ryzon_reel_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final secondsPerPhoto = _seconds / _photos.length;
+      final inputs = StringBuffer();
+      final filters = StringBuffer();
+      final labels = StringBuffer();
+      for (var i = 0; i < _photos.length; i++) {
+        inputs.write('-loop 1 -t ${secondsPerPhoto.toStringAsFixed(3)} -i ${_quoteFfmpeg(_photos[i].path)} ');
+        filters.write('[$i:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,fps=30,format=yuv420p[v$i];');
+        labels.write('[v$i]');
+      }
+      final filter = '${filters.toString()}${labels}concat=n=${_photos.length}:v=1:a=0[outv]';
+      final command = '${inputs}-filter_complex ${_quoteFfmpeg(filter)} -map "[outv]" -an -c:v libx264 -preset ultrafast -crf 25 -t $_seconds -movflags +faststart -y ${_quoteFfmpeg(outputPath)}';
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+      if (!ReturnCode.isSuccess(returnCode) || !await File(outputPath).exists()) {
+        final logs = await session.getAllLogsAsString();
+        throw Exception(logs.isEmpty ? 'Video rendering failed.' : logs);
+      }
+      if (!mounted) return;
+      setState(() => _generatedVideoPath = outputPath);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your MP4 reel is ready. Use Share to save it to your phone.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create video: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _generatingVideo = false);
+    }
+  }
+
+  Future<void> _shareGeneratedVideo() async {
+    final path = _generatedVideoPath;
+    if (path == null) return;
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(path)], text: 'Created with RYZON AI'),
+    );
   }
 
   @override
@@ -1409,6 +1473,49 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
             label: const Text('Prepare Reel Draft'),
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
           ),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: _generatingVideo ? null : _generateSlideshowVideo,
+            icon: _generatingVideo
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.movie_creation_outlined),
+            label: Text(_generatingVideo ? 'Creating MP4…' : 'Create MP4 Video'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF4DAD87),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+          if (_generatedVideoPath != null) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(children: [
+                      Icon(Icons.check_circle, color: Colors.greenAccent),
+                      SizedBox(width: 8),
+                      Expanded(child: Text('MP4 video created successfully', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ]),
+                    const SizedBox(height: 8),
+                    const Text('This is a photo slideshow video, not AI cartoon animation yet.',
+                        style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _shareGeneratedVideo,
+                        icon: const Icon(Icons.share_outlined),
+                        label: const Text('Share / Save MP4'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (_draftReady) ...[
             const SizedBox(height: 14),
             Card(
@@ -1437,7 +1544,7 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
           ],
           const SizedBox(height: 12),
           const Text(
-            'Use photos and voices only with permission. No AI cartoon video is uploaded or generated by this draft screen.',
+            'Use photos and voices only with permission. AI cartoon animation, dialogue, music and lip-sync require a connected AI service.',
             style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
           ),
         ],
