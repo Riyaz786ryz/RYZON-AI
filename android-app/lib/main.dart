@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'ai_creative_studio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -213,6 +214,7 @@ const features = <StudioFeature>[
   StudioFeature('Make Cartoon Reels', 'Create vertical Shorts and Reels', Icons.video_camera_back_outlined),
   StudioFeature('Video / Movie Splitter', 'Split videos into 30s or 60s parts', Icons.content_cut),
   StudioFeature('Photo to Cartoon', 'Upload photos and find people', Icons.face_retouching_natural),
+  StudioFeature('AI Story & Script Studio', 'Generate stories, dialogue and storyboards', Icons.auto_awesome),
   StudioFeature('AI Movie Maker', 'Build a story scene by scene', Icons.movie_creation_outlined),
   StudioFeature('Video to Cartoon', 'Cartoonize an existing video', Icons.video_library_outlined),
   StudioFeature('Live Cartoon Camera', 'Preview cartoon camera effects', Icons.camera_alt_outlined),
@@ -437,6 +439,9 @@ class HomeScreen extends StatelessWidget {
                             builder: (_) {
                               if (feature.title == 'Make Cartoon Reels') {
                                 return const CartoonReelsScreen();
+                              }
+                              if (feature.title == 'AI Story & Script Studio') {
+                                return const AiCreativeStudioScreen();
                               }
                               if (feature.title == 'AI Movie Maker') {
                                 return const AiMovieStudioScreen();
