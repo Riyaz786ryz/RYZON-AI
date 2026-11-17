@@ -93,7 +93,7 @@ class _AiCreativeStudioScreenState extends State<AiCreativeStudioScreen> {
         ], onChanged: _busy ? null : (v) => setState(() { _task = v ?? 'story'; _result = null; _error = null; })),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(value: _language, decoration: const InputDecoration(labelText: 'Language', border: OutlineInputBorder()), items: const [
-          DropdownMenuItem(value: 'Tamil', child: Text('Tamil')), DropdownMenuItem(value: 'English', child: Text('English')), DropdownMenuItem(value: 'Hindi', child: Text('Hindi')),
+          DropdownMenuItem(value: 'Tamil', child: Text('Tamil')), DropdownMenuItem(value: 'English', child: Text('English')), DropdownMenuItem(value: 'Hindi', child: Text('Hindi')), DropdownMenuItem(value: 'Urdu', child: Text('Urdu')),
         ], onChanged: _busy ? null : (v) => setState(() => _language = v ?? 'Tamil')),
         if (_task == 'story') ...[
           const SizedBox(height: 12),
