@@ -88,10 +88,13 @@ async function readJson(req) {
 }
 
 async function generateWithGemini(prompt) {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY,
+    },
     signal: AbortSignal.timeout(45_000),
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
