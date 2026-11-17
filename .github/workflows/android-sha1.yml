@@ -1,4 +1,4 @@
-name: Get RYZON AI Android SHA-1
+name: Get RYZONE Android SHA-1
 
 on:
   workflow_dispatch:
