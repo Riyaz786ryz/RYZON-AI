@@ -1,4 +1,4 @@
-# RYZON AI
+# RYZONE
 
 AI Cartoon Movie Maker
 
