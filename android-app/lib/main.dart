@@ -26,7 +26,7 @@ class RyzonAiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'RYZON AI',
+        title: 'RYZONE',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
@@ -122,7 +122,7 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen> {
                 children: [
                   const Icon(Icons.auto_awesome, size: 72, color: Color(0xFFC8B6FF)),
                   const SizedBox(height: 18),
-                  const Text('RYZON AI', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
+                  const Text('RYZONE', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 10),
                   const Text(
                     'Sign in with Google to enter your AI cartoon studio.',
@@ -180,7 +180,7 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 (user?.displayName?.trim().isNotEmpty ?? false)
                     ? user!.displayName!
-                    : 'RYZON AI User',
+                    : 'RYZONE User',
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
@@ -246,7 +246,7 @@ const features = <StudioFeature>[
   StudioFeature('AI Lighting Studio', 'Control cinematic light and shadows', Icons.light_mode_outlined),
   StudioFeature('Special Effects Studio', 'Plan magic, smoke and visual effects', Icons.bolt_outlined),
   StudioFeature('Global Language Studio', 'Plan dubbing and subtitles', Icons.translate),
-  StudioFeature('RYZON AI Movie Theatre', 'Watch and share finished movies', Icons.local_movies_outlined),
+  StudioFeature('RYZONE Movie Theatre', 'Watch and share finished movies', Icons.local_movies_outlined),
 ];
 
 class HomeScreen extends StatelessWidget {
@@ -255,7 +255,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('RYZON AI', style: TextStyle(fontWeight: FontWeight.w800)),
+          title: const Text('RYZONE', style: TextStyle(fontWeight: FontWeight.w800)),
           actions: [
             IconButton(
               tooltip: 'My Profile',
@@ -809,7 +809,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                   style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               const Text(
-                'Upload a photo containing one or more people. RYZON AI scans it on this device and counts the faces it can detect.',
+                'Upload a photo containing one or more people. RYZONE scans it on this device and counts the faces it can detect.',
                 style: TextStyle(color: Colors.white70, height: 1.45),
               ),
               const SizedBox(height: 18),
@@ -1242,7 +1242,7 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
     final path = _generatedVideoPath;
     if (path == null) return;
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(path)], text: 'Created with RYZON AI'),
+      ShareParams(files: [XFile(path)], text: 'Created with RYZONE'),
     );
   }
 
@@ -2225,7 +2225,7 @@ class _AiMovieStudioScreenState extends State<AiMovieStudioScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('RYZON AI Movie Studio')),
+    appBar: AppBar(title: const Text('RYZONE Movie Studio')),
     body: ListView(
       padding: const EdgeInsets.all(18),
       children: [
@@ -2322,7 +2322,7 @@ class FeatureScreen extends StatelessWidget {
                 Text(feature.title, style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 10),
                 Text(
-                  'This studio module is part of the RYZON AI roadmap. Its working AI features and service connections will be built in the next development steps.',
+                  'This studio module is part of the RYZONE roadmap. Its working AI features and service connections will be built in the next development steps.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                 ),
