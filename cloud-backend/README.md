@@ -1,25 +1,34 @@
-# RYZONE Cloud Backend — Firebase-authenticated Gemini starter
+# RYZONE Cloud Backend — Firebase-authenticated Gemini adapter
 
-This is an executable development backend for text-based cartoon planning. It verifies Firebase ID tokens with Firebase Admin before accepting AI requests.
+This Node.js service provides real AI text generation for the Flutter creative studio. It verifies Firebase ID tokens before calling Gemini.
 
 ## Endpoints
-- `GET /health` — service health.
-- `POST /v1/ai/story` — create a story.
-- `POST /v1/ai/dialogue` — create character dialogue.
-- `POST /v1/ai/scenes` — create a text storyboard.
+- GET /health — service health.
+- POST /v1/ai/story — create a story.
+- POST /v1/ai/dialogue — create character dialogue.
+- POST /v1/ai/scenes — create a text storyboard.
 
-AI endpoints require `Authorization: Bearer <Firebase ID token>`. The Android app must obtain the token from the signed-in Firebase user using `FirebaseAuth.instance.currentUser!.getIdToken()`. Never embed a shared backend token or provider API key in the APK.
+The Flutter client in android-app/lib/ai_creative_studio.dart calls these exact routes and sends the signed-in user's Firebase ID token. Provider keys stay on the server and must never be embedded in the APK.
 
-## Server configuration
-Requires Node.js 20+, Firebase Admin Application Default Credentials for project `ryzon-ai`, and a Gemini API key.
-Set `GEMINI_API_KEY`, `FIREBASE_PROJECT_ID=ryzon-ai`, and `GEMINI_MODEL` in the hosting platform. On Google Cloud hosting, attach a dedicated service account with only the required Firebase token-verification permissions. Do not commit service-account JSON or real secrets.
+## Hosting configuration
+Requires Node.js 20+, Firebase Admin Application Default Credentials for project ryzon-ai, and:
+- GEMINI_API_KEY — secret Gemini API key.
+- FIREBASE_PROJECT_ID=ryzon-ai.
+- GEMINI_MODEL — model identifier supported by the configured Gemini API.
 
-Run `npm install`, `npm run check`, then `npm start`.
+Set secrets in the hosting platform's environment/secret manager. Never commit service-account JSON or real secrets.
 
-## Important status
-- Firebase ID token verification: implemented in backend source.
-- Gemini story/dialogue/storyboard text endpoints: implemented in backend source.
-- Backend deployment, hosting credentials, Gemini key, and HTTPS URL: not configured here.
-- Android client integration: not yet implemented.
-- Per-user quotas, database, private media storage, image generation, speech, lip-sync, and rendered AI video: not implemented.
-- The backend must not be exposed publicly until deployed with HTTPS, verified Firebase credentials, quotas, monitoring, and privacy controls.
+Run npm install, npm run check, then npm start from this directory.
+
+## Implemented
+- Firebase ID-token verification, including revoked-token checks.
+- Story, dialogue and storyboard generation endpoints.
+- Input validation, request body size limit, per-IP request throttling, no-store response headers, and safe provider error handling.
+- Flutter client authentication and calls to the three AI text routes.
+
+## Not yet implemented
+- Backend deployment, hosting credentials, Gemini key, and HTTPS URL.
+- AI image generation, speech generation, lip-sync, animation and rendered MP4.
+- Private photo uploads, durable generation jobs, per-user quotas, billing, and project persistence.
+
+The app's text studio becomes live only after the backend is deployed with valid credentials and the app is configured with RYZON_API_BASE_URL. Do not claim a generated video exists until the media generation and rendering pipeline is connected.
