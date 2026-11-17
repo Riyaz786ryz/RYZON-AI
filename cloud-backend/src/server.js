@@ -128,7 +128,7 @@ async function generateWithGemini(prompt) {
 
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") {
-    return send(res, 200, { ok: true, service: "ryzon-ai-cloud-backend" });
+    return send(res, 200, { ok: true, service: "ryzone-cloud-backend" });
   }
 
   const taskName = req.url?.split("?")[0]?.match(/^\/v1\/ai\/(story|dialogue|scenes)$/)?.[1];
@@ -166,7 +166,7 @@ const server = http.createServer(async (req, res) => {
     const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
     if (status === 500) {
       // Keep API keys, prompts, and provider diagnostics out of application logs.
-      console.error("RYZON AI backend request failed:", error.name || "Error");
+      console.error("RYZONE backend request failed:", error.name || "Error");
     }
     return send(res, status, {
       error: status === 500 ? "Internal server error" : error.message,
@@ -182,5 +182,5 @@ if (!GEMINI_API_KEY) {
 
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`RYZON AI backend listening on port ${PORT}`);
+  console.log(`RYZONE backend listening on port ${PORT}`);
 });
