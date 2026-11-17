@@ -1,6 +1,6 @@
-# RYZON AI — Android App
+# RYZONE — Android App
 
-Flutter starter for the RYZON AI cartoon movie studio.
+Flutter starter for the RYZONE cartoon movie studio.
 
 ## Current working module
 
