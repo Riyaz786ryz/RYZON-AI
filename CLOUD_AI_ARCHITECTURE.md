@@ -1,13 +1,13 @@
-# RYZON AI Cloud AI Architecture
+# RYZONE Cloud AI Architecture
 
 Status: architecture approved; implementation and deployment are not complete.
 
 ## Product direction
-RYZON AI will use a cloud-connected architecture for generative AI features. The Android app remains the user interface and performs local tasks such as gallery selection and face detection. Generative image, video, voice, and story workloads run through authenticated server-side services.
+RYZONE will use a cloud-connected architecture for generative AI features. The Android app remains the user interface and performs local tasks such as gallery selection and face detection. Generative image, video, voice, and story workloads run through authenticated server-side services.
 
 ## First delivery milestone: Photo to Cartoon
 1. User selects a photo and a cartoon style in the Android app.
-2. The app asks the authenticated RYZON AI backend to create a generation.
+2. The app asks the authenticated RYZONE backend to create a generation.
 3. The backend validates the user's identity, file type/size, consent, and available quota.
 4. The backend sends the image and style prompt to the configured image provider using a server-side secret.
 5. The result is stored in private cloud storage and linked to the user's project.
