@@ -1,6 +1,6 @@
-# RYZON AI – New Creative Studio Features
+# RYZONE – New Creative Studio Features
 
-This roadmap records the ten additional features approved for the RYZON AI project. The home screen currently exposes these as navigation cards. The cards are entry points to planned modules; they do not mean the underlying AI services are already implemented.
+This roadmap records the ten additional features approved for the RYZONE project. The home screen currently exposes these as navigation cards. The cards are entry points to planned modules; they do not mean the underlying AI services are already implemented.
 
 ## 1. Emotion & Acting Studio
 - Let creators choose expressions and acting intentions such as happy, sad, angry, surprised, afraid, and confident.
@@ -80,7 +80,7 @@ This roadmap records the ten additional features approved for the RYZON AI proje
 
 ---
 
-# RYZON AI – 15 Advanced Studio Features
+# RYZONE – 15 Advanced Studio Features
 
 These additional features were approved and added to the Flutter home screen as roadmap entry cards. Their full implementations are future work.
 
@@ -140,7 +140,7 @@ These additional features were approved and added to the Flutter home screen as 
 - Prepare multilingual dialogue, dubbing, subtitles, and translated scripts.
 - Allow review of translations and timing before final export.
 
-## 15. RYZON AI Movie Theatre
+## 15. RYZONE Movie Theatre
 - Provide a private library for finished movies and previews.
 - Allow creator-controlled sharing and visibility settings.
 
@@ -249,7 +249,7 @@ The user approved this proposed plan structure.
 
 # Google Flow-style AI Movie Studio
 
-The approved product direction is a unified, scene-based cartoon filmmaking workflow inspired by modern AI filmmaking tools. This is an original RYZON AI workflow; it does not imply access to or use of Google's private Flow models or services.
+The approved product direction is a unified, scene-based cartoon filmmaking workflow inspired by modern AI filmmaking tools. This is an original RYZONE workflow; it does not imply access to or use of Google's private Flow models or services.
 
 ## End-to-end workflow
 1. AI Character Creator — create original characters from prompts or authorized reference photos.
@@ -269,7 +269,7 @@ The approved product direction is a unified, scene-based cartoon filmmaking work
 - It presents all ten workflow stages and creates an on-screen local plan draft.
 - The draft is not yet AI-generated, permanently saved, or exported as a movie.
 - No Google Flow account/API or other AI provider is connected. Provider selection, secure backend, authentication, cost/credit controls, consent checks, generation queue, media storage, editing/rendering pipeline, and real-device tests remain required.
-- RYZON AI must not claim to be Google Flow or imply Google's models are included. Provider terms, output rights, privacy, and regional availability must be reviewed before integration.
+- RYZONE must not claim to be Google Flow or imply Google's models are included. Provider terms, output rights, privacy, and regional availability must be reviewed before integration.
 
 
 ## Expanded Cartoon Reels categories (2026-11-13)
