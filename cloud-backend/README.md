@@ -1,4 +1,4 @@
-# RYZON AI Cloud Backend — Firebase-authenticated Gemini starter
+# RYZONE Cloud Backend — Firebase-authenticated Gemini starter
 
 This is an executable development backend for text-based cartoon planning. It verifies Firebase ID tokens with Firebase Admin before accepting AI requests.
 
