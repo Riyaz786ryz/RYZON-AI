@@ -1,7 +1,7 @@
-# RYZON AI — Authentication and Delivery Plan
+# RYZONE — Authentication and Delivery Plan
 
 ## Product decision
-RYZON AI will offer **Continue with Google** sign-in for every user. Each person signs in with their own Google account. The app must not ask users to share Gmail passwords; Google OAuth handles sign-in.
+RYZONE will offer **Continue with Google** sign-in for every user. Each person signs in with their own Google account. The app must not ask users to share Gmail passwords; Google OAuth handles sign-in.
 
 ## Authentication architecture
 - Use Firebase Authentication with the Google provider for Android.
@@ -14,7 +14,7 @@ RYZON AI will offer **Continue with Google** sign-in for every user. Each person
 - Request only basic profile/email scopes unless a later feature needs more.
 
 ## Setup required before Google sign-in can work
-1. Create or select a Firebase project for RYZON AI.
+1. Create or select a Firebase project for RYZONE.
 2. Register the Android application using its exact applicationId/package name.
 3. Enable Google as a sign-in provider in Firebase Authentication.
 4. Add the app's SHA-1 and SHA-256 signing fingerprints (debug and release as appropriate).
