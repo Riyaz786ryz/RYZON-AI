@@ -255,7 +255,47 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('RYZONE', style: TextStyle(fontWeight: FontWeight.w800)),
+          title: Builder(
+            builder: (context) {
+              final user = FirebaseAuth.instance.currentUser;
+              final displayName = user?.displayName?.trim();
+              return Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: (user?.photoURL?.isNotEmpty ?? false)
+                        ? NetworkImage(user!.photoURL!)
+                        : null,
+                    child: (user?.photoURL?.isNotEmpty ?? false)
+                        ? null
+                        : const Icon(Icons.person, size: 20),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (displayName?.isNotEmpty ?? false) ? displayName! : 'RYZONE',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                        ),
+                        if (user?.email?.isNotEmpty ?? false)
+                          Text(
+                            user!.email!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 10, color: Colors.white70),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
           actions: [
             IconButton(
               tooltip: 'My Profile',
