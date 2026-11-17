@@ -1,4 +1,4 @@
-name: Check RYZON AI cloud backend
+name: Check RYZONE cloud backend
 on:
   push:
     paths:
