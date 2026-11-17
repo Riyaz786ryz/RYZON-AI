@@ -116,7 +116,7 @@ jobs:
 
       - name: Build test APK
         working-directory: android-app
-        run: flutter build apk --debug
+        run: flutter build apk --debug --dart-define=RYZON_API_BASE_URL=${{ secrets.RYZON_API_BASE_URL }}
 
       - name: Verify APK signing certificate
         working-directory: android-app
