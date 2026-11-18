@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'ai_creative_studio.dart';
@@ -794,6 +796,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
 
   final List<XFile> _photos = [];
   final List<_DetectedPhotoFace> _faces = [];
+  final List<Future<Uint8List?>> _facePreviews = [];
   final Set<int> _selected = {};
   bool _busy = false;
   String? _error;
@@ -808,6 +811,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
           ..clear()
           ..addAll(picked);
         _faces.clear();
+        _facePreviews.clear();
         _selected.clear();
         _error = null;
         _busy = true;
@@ -824,6 +828,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
             photo: picked[photoIndex],
             face: face,
           ));
+          _facePreviews.add(_cropFacePreview(picked[photoIndex].path, face.boundingBox));
         }
         if (!mounted) return;
         setState(() {
@@ -843,6 +848,46 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
         _busy = false;
         _error = 'Could not read one of these photos. Please choose clear images and try again.';
       });
+    }
+  }
+
+  Future<Uint8List?> _cropFacePreview(String path, Rect faceBounds) async {
+    ui.Image? source;
+    ui.Image? cropped;
+    try {
+      final bytes = await File(path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      source = frame.image;
+      codec.dispose();
+
+      final left = faceBounds.left.clamp(0.0, source.width.toDouble());
+      final top = faceBounds.top.clamp(0.0, source.height.toDouble());
+      final right = faceBounds.right.clamp(0.0, source.width.toDouble());
+      final bottom = faceBounds.bottom.clamp(0.0, source.height.toDouble());
+      if (right <= left || bottom <= top) return null;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      const outputSize = 160.0;
+      final sourceRect = Rect.fromLTRB(left, top, right, bottom);
+      final destinationRect = const Rect.fromLTWH(0, 0, outputSize, outputSize);
+      canvas.drawImageRect(
+        source,
+        sourceRect,
+        destinationRect,
+        Paint()..filterQuality = FilterQuality.high,
+      );
+      final picture = recorder.endRecording();
+      cropped = await picture.toImage(160, 160);
+      picture.dispose();
+      final png = await cropped.toByteData(format: ui.ImageByteFormat.png);
+      return png?.buffer.asUint8List();
+    } catch (_) {
+      return null;
+    } finally {
+      source?.dispose();
+      cropped?.dispose();
     }
   }
 
@@ -946,7 +991,28 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                       subtitle: Text(
                         'Photo ${item.photoIndex + 1} • ${box.width.round()} × ${box.height.round()} px',
                       ),
-                      secondary: const CircleAvatar(child: Icon(Icons.person_outline)),
+                      secondary: FutureBuilder<Uint8List?>(
+                        future: _facePreviews[index],
+                        builder: (context, snapshot) {
+                          final bytes = snapshot.data;
+                          if (bytes == null) {
+                            return const CircleAvatar(
+                              child: Icon(Icons.person_outline),
+                            );
+                          }
+                          return ClipOval(
+                            child: Image.memory(
+                              bytes,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const CircleAvatar(
+                                child: Icon(Icons.person_outline),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   );
                 }),
