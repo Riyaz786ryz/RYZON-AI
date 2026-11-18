@@ -5,6 +5,7 @@ import { getAuth } from "firebase-admin/auth";
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-3.8-flash-tts";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "ryzon-ai";
@@ -12,6 +13,7 @@ const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "ryzon-ai";
 initializeApp({ credential: applicationDefault(), projectId: FIREBASE_PROJECT_ID });
 const firebaseAuth = getAuth();
 const MAX_BODY_BYTES = 32 * 1024;
+const MAX_TTS_BODY_BYTES = 64 * 1024;
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 const requestsByIp = new Map();
@@ -187,6 +189,55 @@ async function generateCartoonImage(input) {
   return imageBase64;
 }
 
+async function generateSpeech(input) {
+  if (!GEMINI_API_KEY) {
+    const error = new Error("AI voice is not enabled yet. Configure GEMINI_API_KEY securely on the backend.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const text = typeof input.text === "string" ? input.text.trim() : "";
+  if (text.length < 1 || text.length > 3000) {
+    const error = new Error("Voice text must contain between 1 and 3000 characters.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const voices = new Set(["Kore", "Puck", "Charon", "Aoede", "Fenrir", "Leda", "Orus", "Zephyr"]);
+  const voiceName = voices.has(input.voiceName) ? input.voiceName : "Kore";
+  const language = typeof input.language === "string" ? input.language.slice(0, 40) : "Tamil";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_TTS_MODEL)}:generateContent`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
+      signal: AbortSignal.timeout(180_000),
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: `Speak the following text naturally in ${language}. Do not translate or add words.\\n\\n${text}` }] }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
+        },
+      }),
+    },
+  );
+  if (!response.ok) {
+    const error = new Error(response.status === 429
+      ? "AI voice usage limit reached. Please try again later."
+      : "AI voice service rejected the request or is temporarily unavailable.");
+    error.statusCode = response.status === 429 ? 429 : 502;
+    throw error;
+  }
+  const data = await response.json();
+  const audioPart = data.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.data);
+  const audioBase64 = audioPart?.inlineData?.data;
+  const mimeType = audioPart?.inlineData?.mimeType || "audio/wav";
+  if (typeof audioBase64 !== "string" || !audioBase64.length || !mimeType.startsWith("audio/")) {
+    const error = new Error("AI voice service returned no playable audio. Please try a shorter text.");
+    error.statusCode = 502;
+    throw error;
+  }
+  return { audioBase64, mimeType };
+}
+
 async function generateWithGemini(prompt) {
   if (!GEMINI_API_KEY) {
     const error = new Error("Story and dialogue AI is not enabled yet. Configure GEMINI_API_KEY securely on the backend.");
@@ -242,7 +293,8 @@ const server = http.createServer(async (req, res) => {
   const route = req.url?.split("?")[0] || "";
   const taskName = route.match(/^\/v1\/ai\/(story|dialogue|scenes)$/)?.[1];
   const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
-  if (req.method !== "POST" || (!taskName && !isPhotoToCartoon)) {
+  const isTextToSpeech = route === "/v1/media/text-to-speech";
+  if (req.method !== "POST" || (!taskName && !isPhotoToCartoon && !isTextToSpeech)) {
     return send(res, 404, { error: "Route not found" });
   }
 
@@ -255,13 +307,17 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : MAX_BODY_BYTES);
+    const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : isTextToSpeech ? MAX_TTS_BODY_BYTES : MAX_BODY_BYTES);
     if (isPhotoToCartoon) {
       if (typeof input?.imageBase64 !== "string" || typeof input?.mimeType !== "string") {
         return send(res, 400, { error: "Photo data and MIME type are required." });
       }
       const imageBase64 = await generateCartoonImage(input);
       return send(res, 200, { ok: true, task: "photo-to-cartoon", mimeType: "image/png", imageBase64 });
+    }
+    if (isTextToSpeech) {
+      const audio = await generateSpeech(input || {});
+      return send(res, 200, { ok: true, task: "text-to-speech", ...audio });
     }
     const task = TASKS[taskName];
     const value = input?.[task.required];
