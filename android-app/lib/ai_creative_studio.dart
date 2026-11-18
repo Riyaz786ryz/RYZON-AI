@@ -47,6 +47,36 @@ class RyzonAiApi {
     catch (_) { throw Exception('The generated image could not be decoded.'); }
   }
 
+  static Future<Uint8List> generateSpeech({
+    required String text,
+    required String language,
+    required String voiceName,
+  }) async {
+    if (baseUrl.trim().isEmpty) {
+      throw Exception('AI backend is not connected yet. Deploy and configure the backend first.');
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('Please sign in with Google first.');
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) throw Exception('Could not get your secure sign-in token. Please sign in again.');
+    final root = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final response = await http.post(
+      Uri.parse('$root/v1/media/text-to-speech'),
+      headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + token},
+      body: jsonEncode({'text': text, 'language': language, 'voiceName': voiceName}),
+    ).timeout(const Duration(minutes: 4));
+    Map<String, dynamic> payload;
+    try { payload = jsonDecode(response.body) as Map<String, dynamic>; }
+    catch (_) { throw Exception('The AI voice server returned an unreadable response.'); }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(payload['error']?.toString() ?? 'AI voice generation failed (' + response.statusCode.toString() + ').');
+    }
+    final encoded = payload['audioBase64']?.toString() ?? '';
+    if (encoded.isEmpty) throw Exception('The AI voice server returned no audio.');
+    try { return base64Decode(encoded); }
+    catch (_) { throw Exception('The generated audio could not be decoded.'); }
+  }
+
   static Future<String> generate({required String task, required Map<String, dynamic> input}) async {
     if (baseUrl.trim().isEmpty) {
       throw Exception('Backend not connected. Deploy the cloud backend and set RYZON_API_BASE_URL when building the app.');
