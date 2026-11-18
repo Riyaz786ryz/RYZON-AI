@@ -978,9 +978,9 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
         builder: (_) => CharacterProfileScreen(
           characterCount: _selected.length,
           sourcePhotoPaths: _photos.map((photo) => photo.path).toList(),
-          characterPhotoIndexes: _selected
-              .toList()
-              ..sort((a, b) => a.compareTo(b)),
+          characterPhotoIndexes: (_selected.toList()..sort())
+              .map((faceIndex) => _faces[faceIndex].photoIndex)
+              .toList(),
         ),
       ),
     );
