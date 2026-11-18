@@ -25,3 +25,12 @@ test("supports one-character minimum for speech text", () => {
   assert.equal(isValidTextInput("A", 3000, 1), true);
   assert.equal(isValidTextInput("", 3000, 1), false);
 });
+
+import { boundedText } from "./validation.js";
+
+test("bounds and normalizes optional prompt fields", () => {
+  assert.equal(boundedText("  Tamil   language ", 40, "Tamil"), "Tamil language");
+  assert.equal(boundedText("x".repeat(10), 4, "fallback"), "xxxx");
+  assert.equal(boundedText("   ", 40, "fallback"), "fallback");
+  assert.equal(boundedText(null, 40, "fallback"), "fallback");
+});
