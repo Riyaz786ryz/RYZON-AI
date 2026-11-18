@@ -1,48 +1,87 @@
-# RYZONE Cloud Backend — Firebase-authenticated Gemini adapter
+# RYZONE Cloud Backend — Firebase-authenticated AI adapter
 
-This Node.js service provides real AI text generation for the Flutter creative studio. It verifies Firebase ID tokens before calling Gemini.
+This Node.js 20 service provides server-side AI endpoints for the Flutter app. It verifies Firebase ID tokens before calling AI providers. Provider API keys must remain in the hosting platform's secret manager and must never be embedded in the APK or committed to GitHub.
 
 ## Endpoints
-- GET /health — service health.
-- POST /v1/ai/story — create a story.
-- POST /v1/ai/dialogue — create character dialogue.
-- POST /v1/ai/scenes — create a text storyboard.
-- POST /v1/media/photo-to-cartoon — transform an uploaded JPG/PNG/WebP photo into a generated PNG character image (requires `OPENAI_API_KEY`).
-- POST /v1/media/text-to-speech — generate speech audio from text using Gemini TTS (requires `GEMINI_API_KEY`).
 
-The Flutter client in android-app/lib/ai_creative_studio.dart calls these exact routes and sends the signed-in user's Firebase ID token. Provider keys stay on the server and must never be embedded in the APK.
+- `GET /health` — service health check.
+- `POST /v1/ai/story` — create a cartoon story.
+- `POST /v1/ai/dialogue` — create character dialogue.
+- `POST /v1/ai/scenes` — create a text storyboard.
+- `POST /v1/media/photo-to-cartoon` — transform an uploaded JPG/PNG/WebP photo into a generated PNG character image (requires `OPENAI_API_KEY`).
+- `POST /v1/media/text-to-speech` — generate speech audio from text using Gemini TTS (requires `GEMINI_API_KEY`).
 
-## Hosting configuration
-Requires Node.js 20+, Firebase Admin Application Default Credentials for project ryzon-ai, and:
-- GEMINI_API_KEY — secret Gemini API key (needed for story/dialogue/storyboard generation).
-- OPENAI_API_KEY — secret OpenAI API key (needed for photo-to-cartoon image generation).
-- OPENAI_IMAGE_MODEL — optional image model override; defaults to `gpt-image-2`.
-- FIREBASE_PROJECT_ID=ryzon-ai.
-- GEMINI_MODEL — model identifier supported by the configured Gemini API (defaults to `gemini-3.8-flash`).
-- GEMINI_TTS_MODEL — optional TTS model override; defaults to `gemini-3.8-flash-tts`.
+The Flutter client sends the signed-in user's Firebase ID token to these routes. The photo route returns a generated image, not an animated video. The TTS route returns audio bytes, which the Voice Studio can play after the app is built and tested.
 
-Set secrets in the hosting platform's environment/secret manager. Never commit service-account JSON or real secrets.
+## Required environment and credentials
 
-Run npm install, npm run check, then npm start from this directory.
+- Node.js 20+.
+- `FIREBASE_PROJECT_ID=ryzon-ai`.
+- `GEMINI_API_KEY` — server-side Gemini API key for story/dialogue/storyboard and TTS.
+- `OPENAI_API_KEY` — server-side OpenAI API key for photo-to-cartoon.
+- `GEMINI_MODEL` — optional text model override; default is `gemini-3.8-flash`.
+- `GEMINI_TTS_MODEL` — optional TTS model override; default is `gemini-3.8-flash-tts`.
+- `OPENAI_IMAGE_MODEL` — optional image model override; default is `gpt-image-2`.
+- `PORT` — hosting port; default is `8080`.
 
-## Implemented
+Firebase Admin uses Application Default Credentials. On Google Cloud Run, attach a dedicated runtime service account for the Firebase project and grant only the permissions needed by the service. Do not upload or commit a service-account JSON key.
+
+## Local checks
+
+From this directory:
+
+```sh
+npm install
+npm run check
+npm start
+```
+
+The backend check workflow also runs `node --check src/server.js` on GitHub Actions. A passing syntax check does not prove provider credentials, API access, or live generation work.
+
+## Google Cloud Run deployment outline
+
+The repository includes a Dockerfile for Cloud Run. Deployment is a separate, billable cloud action and has **not** been performed.
+
+1. Create or select a Google Cloud project and enable Cloud Run, Cloud Build, Artifact Registry, Secret Manager, and the required Firebase/Gemini services.
+2. Create a dedicated runtime service account. Configure Firebase Admin Application Default Credentials for project `ryzon-ai`; do not use a downloaded JSON key in the repository.
+3. Store `GEMINI_API_KEY` and `OPENAI_API_KEY` in Secret Manager. Do not put their values in shell history, source files, or APK build arguments.
+4. From the `cloud-backend` directory, deploy the service with the runtime service account, region, and Secret Manager references. Example command (replace the project, region, service account, and secret names with the values you actually created):
+
+```sh
+gcloud run deploy ryzone-ai-backend \
+  --source . \
+  --region asia-south1 \
+  --service-account RUNTIME_SERVICE_ACCOUNT_EMAIL \
+  --set-env-vars FIREBASE_PROJECT_ID=ryzon-ai,GEMINI_MODEL=gemini-3.8-flash,GEMINI_TTS_MODEL=gemini-3.8-flash-tts \
+  --set-secrets GEMINI_API_KEY=GEMINI_SECRET_NAME:latest,OPENAI_API_KEY=OPENAI_SECRET_NAME:latest \
+  --no-allow-unauthenticated
+```
+
+5. Grant the app's intended callers access through Firebase ID-token verification in the application. Cloud Run IAM ingress/authentication settings must be configured consistently; do not make the service public without an explicit security review.
+6. Verify the deployed `/health` endpoint and then test every authenticated AI route with a real Firebase user token. Only after that should the HTTPS service URL be added to the Android build as `RYZON_API_BASE_URL`.
+
+Do not run the deployment command until the cloud project, billing, API keys, and service-account permissions have been reviewed and you explicitly approve any possible charges.
+
+## Implemented in source (not yet live-tested)
+
 - Firebase ID-token verification, including revoked-token checks.
-- Story, dialogue and storyboard generation endpoints (Gemini).
-- Authenticated photo-to-cartoon image-edit endpoint using the OpenAI Images API, with image MIME/base64 validation, 12 MB source limit, and server-side provider credentials.
-- Authenticated text-to-speech endpoint using Gemini TTS with a restricted prebuilt voice list and bounded input text.
-- Input validation, request body size limit, per-IP request throttling, no-store response headers, and safe provider error handling.
-- Flutter client authentication and calls to the three AI text routes.
+- Story, dialogue and storyboard text-generation endpoints.
+- Photo-to-cartoon image-edit endpoint with MIME/base64 validation and a 12 MB source limit.
+- Text-to-speech endpoint with a restricted prebuilt voice list and bounded input text.
+- Request-size limits, per-IP throttling, no-store response headers, and safe provider error handling.
+- Flutter client calls for story/dialogue/storyboard, photo-to-cartoon, and TTS; Voice Studio includes audio playback controls.
 
-## Not yet implemented
-- Backend deployment, hosting credentials, Gemini key, and HTTPS URL.
-- Flutter audio playback UI and generated-audio project persistence.
-- Speech-to-text input, lip-sync, animation and rendered MP4.
-- Private cloud storage, durable generation jobs, per-user quotas, billing, and project persistence.
-- The photo-to-cartoon route returns generated PNG bytes to the authenticated client; production private storage and project persistence still need to be implemented.
+## Still required before the app can be called functional
 
-The text studio becomes live only after the backend is deployed with valid Gemini credentials and the app is configured with RYZON_API_BASE_URL. Photo-to-cartoon becomes live only after the backend is deployed with a valid OpenAI API key and the Android client workflow is connected. This endpoint generates a character image, not a video. Do not claim a generated video exists until speech, animation, job orchestration, storage, and MP4 rendering are connected and tested.
+- Backend deployment, hosting configuration, provider keys, and HTTPS URL.
+- Successful authenticated live tests for story, dialogue, storyboard, photo-to-cartoon, and TTS/playback.
+- Speech-to-text input, lip-sync, character animation, and rendered MP4 generation.
+- Private cloud storage, durable generation jobs, per-user quotas, billing/coins, and project persistence.
+- Group-photo face-to-character mapping and consistent character identity across scenes.
+- Existing-video conversion/dubbing and live cartoon camera.
 
+The app must not claim to create a cartoon video until speech, animation, job orchestration, storage, and MP4 rendering are connected and tested.
 
-### Gemini text-to-speech
+## Gemini text-to-speech
 
-The `POST /v1/media/text-to-speech` endpoint uses the Gemini 3.8 Flash TTS Interactions API (`GEMINI_TTS_MODEL`, default `gemini-3.8-flash-tts`). It sends a single-speaker request and returns the generated WAV audio as base64 with `mimeType: audio/wav`. Keep `GEMINI_API_KEY` configured only as a backend environment secret; never place it in the Android app.
+The default TTS model is `gemini-3.8-flash-tts`, using the Gemini Interactions API on `v1beta`. The endpoint extracts the returned audio payload and sends it to the Flutter client as base64 WAV audio. Model/API availability and actual playback still need an authenticated integration test with the configured Google AI project.
