@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'ai_creative_studio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -155,52 +157,52 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen> {
       );
 }
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+  @override State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-  @override
-  Widget build(BuildContext context) {
+class _ProfileScreenState extends State<ProfileScreen> {
+  static const _apiBaseUrl = String.fromEnvironment('RYZONE_API_BASE_URL');
+  late Future<Map<String, dynamic>?> _accountFuture;
+  @override void initState() { super.initState(); _accountFuture = _loadAccount(); }
+
+  Future<Map<String, dynamic>?> _loadAccount() async {
+    if (_apiBaseUrl.trim().isEmpty) return null;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) throw Exception('Could not get a secure sign-in token.');
+    final base = _apiBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    final response = await http.get(Uri.parse('$base/v1/me'), headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception('Account sync failed (${response.statusCode}).');
+    final data = jsonDecode(response.body);
+    if (data is! Map<String, dynamic> || data['ok'] != true) throw Exception('The server returned an invalid account response.');
+    return data;
+  }
+
+  @override Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(title: const Text('My Profile')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundImage: user?.photoURL != null
-                    ? NetworkImage(user!.photoURL!)
-                    : null,
-                child: user?.photoURL == null
-                    ? const Icon(Icons.person, size: 48)
-                    : null,
-              ),
-              const SizedBox(height: 18),
-              Text(
-                (user?.displayName?.trim().isNotEmpty ?? false)
-                    ? user!.displayName!
-                    : 'RYZONE User',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                user?.email ?? 'Google account email unavailable',
-                style: const TextStyle(color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                'Signed in with Google',
-                style: TextStyle(color: Colors.greenAccent),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        CircleAvatar(radius: 48, backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null, child: user?.photoURL == null ? const Icon(Icons.person, size: 48) : null),
+        const SizedBox(height: 18),
+        Text((user?.displayName?.trim().isNotEmpty ?? false) ? user!.displayName! : 'RYZONE User', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        Text(user?.email ?? 'Google account email unavailable', style: const TextStyle(color: Colors.white70), textAlign: TextAlign.center),
+        const SizedBox(height: 18),
+        const Text('Signed in with Google', style: TextStyle(color: Colors.greenAccent)),
+        const SizedBox(height: 24),
+        FutureBuilder<Map<String, dynamic>?>(future: _accountFuture, builder: (context, snapshot) {
+          if (_apiBaseUrl.trim().isEmpty) return const Text('Wallet sync will be available after the secure backend is deployed.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70));
+          if (snapshot.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
+          if (snapshot.hasError) return Column(children: [Text('Wallet sync is not available yet: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.orangeAccent)), TextButton(onPressed: () => setState(() => _accountFuture = _loadAccount()), child: const Text('Retry'))]);
+          final wallet = snapshot.data?['wallet'] as Map<String, dynamic>?;
+          final paise = (wallet?['balancePaise'] as num?)?.toInt() ?? 0;
+          return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(children: [const Text('Wallet balance', style: TextStyle(color: Colors.white70)), const SizedBox(height: 6), Text('₹${(paise / 100).toStringAsFixed(2)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)), const SizedBox(height: 4), const Text('INR • Secure server balance', style: TextStyle(color: Colors.white54, fontSize: 12))])));
+        }),
+      ]))),
     );
   }
 }
