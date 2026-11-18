@@ -977,7 +977,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
       MaterialPageRoute<void>(
         builder: (_) => CharacterProfileScreen(
           characterCount: _selected.length,
-          sourcePhotoPath: _photos.first.path,
+          sourcePhotoPaths: _photos.map((photo) => photo.path).toList(),
         ),
       ),
     );
@@ -1000,11 +1000,11 @@ class CharacterProfileScreen extends StatefulWidget {
   const CharacterProfileScreen({
     super.key,
     required this.characterCount,
-    required this.sourcePhotoPath,
+    required this.sourcePhotoPaths,
   });
 
   final int characterCount;
-  final String sourcePhotoPath;
+  final List<String> sourcePhotoPaths;
 
   @override
   State<CharacterProfileScreen> createState() => _CharacterProfileScreenState();
@@ -1092,15 +1092,24 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
               style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
             const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.file(
-                File(widget.sourcePhotoPath),
-                height: 170,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const SizedBox(
-                  height: 90,
-                  child: Center(child: Text('Source photo preview unavailable')),
+            SizedBox(
+              height: 112,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.sourcePhotoPaths.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 9),
+                itemBuilder: (context, index) => ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    File(widget.sourcePhotoPaths[index]),
+                    width: 112,
+                    height: 112,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(
+                      width: 112,
+                      child: Center(child: Icon(Icons.broken_image_outlined)),
+                    ),
+                  ),
                 ),
               ),
             ),
