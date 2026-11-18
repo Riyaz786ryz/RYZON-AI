@@ -1,6 +1,7 @@
 import http from "node:http";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { isValidTextInput } from "./validation.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -196,7 +197,7 @@ async function generateSpeech(input) {
     throw error;
   }
   const text = typeof input.text === "string" ? input.text.trim() : "";
-  if (text.length < 1 || text.length > 3000) {
+  if (!isValidTextInput(text, 3000, 1)) {
     const error = new Error("Voice text must contain between 1 and 3000 characters.");
     error.statusCode = 400;
     throw error;
@@ -334,7 +335,7 @@ const server = http.createServer(async (req, res) => {
     }
     const task = TASKS[taskName];
     const value = input?.[task.required];
-    if (typeof value !== "string" || value.trim().length < 3 || value.length > task.max) {
+    if (!isValidTextInput(value, task.max, 3)) {
       return send(res, 400, {
         error: `"${task.required}" must be text between 3 and ${task.max} characters.`,
       });
