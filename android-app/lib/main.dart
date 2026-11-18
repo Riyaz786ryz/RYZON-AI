@@ -792,42 +792,56 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
     ),
   );
 
-  XFile? _photo;
-  List<Face> _faces = [];
+  final List<XFile> _photos = [];
+  final List<_DetectedPhotoFace> _faces = [];
   final Set<int> _selected = {};
   bool _busy = false;
   String? _error;
 
-  Future<void> _choosePhoto() async {
+  Future<void> _choosePhotos() async {
     try {
-      final image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 92,
-      );
-      if (image == null || !mounted) return;
+      final picked = await _picker.pickMultiImage(imageQuality: 92);
+      if (picked.isEmpty || !mounted) return;
 
       setState(() {
-        _photo = image;
-        _faces = [];
+        _photos
+          ..clear()
+          ..addAll(picked);
+        _faces.clear();
         _selected.clear();
         _error = null;
         _busy = true;
       });
 
-      final detected = await _detector.processImage(
-        InputImage.fromFilePath(image.path),
-      );
+      final detectedFaces = <_DetectedPhotoFace>[];
+      for (var photoIndex = 0; photoIndex < picked.length; photoIndex++) {
+        final detected = await _detector.processImage(
+          InputImage.fromFilePath(picked[photoIndex].path),
+        );
+        for (final face in detected) {
+          detectedFaces.add(_DetectedPhotoFace(
+            photoIndex: photoIndex,
+            photo: picked[photoIndex],
+            face: face,
+          ));
+        }
+        if (!mounted) return;
+        setState(() {
+          _faces
+            ..clear()
+            ..addAll(detectedFaces);
+          _selected
+            ..clear()
+            ..addAll(List<int>.generate(detectedFaces.length, (i) => i));
+        });
+      }
       if (!mounted) return;
-      setState(() {
-        _faces = detected;
-        _selected.addAll(List<int>.generate(detected.length, (i) => i));
-        _busy = false;
-      });
+      setState(() => _busy = false);
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'Could not read this photo. Please choose another image.';
+        _error = 'Could not read one of these photos. Please choose clear images and try again.';
       });
     }
   }
@@ -845,34 +859,45 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const Text('Choose a photo',
+              const Text('Choose one or more photos',
                   style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               const Text(
-                'Upload a photo containing one or more people. RYZONE scans it on this device and counts the faces it can detect.',
+                'Select separate character photos or one group photo. RYZONE scans every selected image on this device and combines the detected faces into one cast.',
                 style: TextStyle(color: Colors.white70, height: 1.45),
               ),
               const SizedBox(height: 18),
               OutlinedButton.icon(
-                onPressed: _busy ? null : _choosePhoto,
+                onPressed: _busy ? null : _choosePhotos,
                 icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Choose from Gallery'),
+                label: const Text('Choose Photos from Gallery'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
               ),
-              if (_photo != null) ...[
+              if (_photos.isNotEmpty) ...[
                 const SizedBox(height: 18),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.file(
-                    File(_photo!.path),
-                    height: 260,
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const SizedBox(
-                      height: 180,
-                      child: Center(child: Text('Photo preview unavailable')),
+                Text('${_photos.length} photo(s) selected',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 104,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _photos.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 9),
+                    itemBuilder: (context, index) => ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(_photos[index].path),
+                        width: 104,
+                        height: 104,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox(
+                          width: 104,
+                          child: Center(child: Icon(Icons.broken_image_outlined)),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -881,31 +906,32 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                 const SizedBox(height: 22),
                 const Center(child: CircularProgressIndicator()),
                 const SizedBox(height: 10),
-                const Center(child: Text('Detecting faces...')),
+                const Center(child: Text('Detecting faces in selected photos...')),
               ],
               if (_error != null) ...[
                 const SizedBox(height: 16),
                 Text(_error!, style: const TextStyle(color: Colors.orangeAccent)),
               ],
-              if (_photo != null && !_busy && _error == null) ...[
+              if (_photos.isNotEmpty && !_busy && _error == null) ...[
                 const SizedBox(height: 22),
                 Text(
-                  '${_faces.length} face(s) detected',
+                  '${_faces.length} face(s) detected across ${_photos.length} photo(s)',
                   style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
-                const Text('Select the people you want to turn into cartoon characters.',
+                const Text('Choose which detected people should become characters.',
                     style: TextStyle(color: Colors.white70)),
                 if (_faces.isEmpty)
                   const Padding(
                     padding: EdgeInsets.only(top: 16),
                     child: Text(
-                      'No clear faces were found. Try a brighter, front-facing photo.',
+                      'No clear faces were found. Try brighter, front-facing photos.',
                       style: TextStyle(color: Colors.orangeAccent),
                     ),
                   ),
                 ...List<Widget>.generate(_faces.length, (index) {
-                  final box = _faces[index].boundingBox;
+                  final item = _faces[index];
+                  final box = item.face.boundingBox;
                   return Card(
                     child: CheckboxListTile(
                       value: _selected.contains(index),
@@ -917,7 +943,9 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                         }
                       }),
                       title: Text('Person ${index + 1}'),
-                      subtitle: Text('Face area: ${box.width.round()} × ${box.height.round()} px'),
+                      subtitle: Text(
+                        'Photo ${item.photoIndex + 1} • ${box.width.round()} × ${box.height.round()} px',
+                      ),
                       secondary: const CircleAvatar(child: Icon(Icons.person_outline)),
                     ),
                   );
@@ -936,7 +964,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
               ],
               const SizedBox(height: 18),
               const Text(
-                'Privacy: this module performs face detection on the device. It does not upload the photo to an AI server.',
+                'Privacy: face detection runs on this device. Photos are not uploaded by this screen.',
                 style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
               ),
             ],
@@ -949,11 +977,23 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
       MaterialPageRoute<void>(
         builder: (_) => CharacterProfileScreen(
           characterCount: _selected.length,
-          sourcePhotoPath: _photo!.path,
+          sourcePhotoPath: _photos.first.path,
         ),
       ),
     );
   }
+}
+
+class _DetectedPhotoFace {
+  const _DetectedPhotoFace({
+    required this.photoIndex,
+    required this.photo,
+    required this.face,
+  });
+
+  final int photoIndex;
+  final XFile photo;
+  final Face face;
 }
 
 class CharacterProfileScreen extends StatefulWidget {
