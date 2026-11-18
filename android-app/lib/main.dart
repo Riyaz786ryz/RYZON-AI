@@ -2018,6 +2018,7 @@ class StoryboardPreviewScreen extends StatefulWidget {
 class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
   final TextEditingController _movieTitle = TextEditingController();
   final TextEditingController _storyPrompt = TextEditingController();
+  final TextEditingController _bulkScenePrompts = TextEditingController();
   final List<StoryboardScene> _scenes = [];
   int _sceneCount = 5;
   String _style = '3D Movie';
@@ -2036,6 +2037,67 @@ class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
     'Tracking shot',
     'Aerial view',
   ];
+
+  void _importScenePrompts() {
+    final raw = _bulkScenePrompts.text.trim();
+    if (raw.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Paste your scene prompts first.')),
+      );
+      return;
+    }
+
+    final headerPattern = RegExp(
+      r'^\\s*(?:scene|shot)\\s*\\d+\\s*[:.)-]\\s*',
+      caseSensitive: false,
+      multiLine: true,
+    );
+    final matches = headerPattern.allMatches(raw).toList();
+    final prompts = <String>[];
+
+    if (matches.isNotEmpty) {
+      for (var i = 0; i < matches.length; i++) {
+        final start = matches[i].end;
+        final end = i + 1 < matches.length ? matches[i + 1].start : raw.length;
+        final prompt = raw.substring(start, end).trim();
+        if (prompt.isNotEmpty) prompts.add(prompt);
+      }
+    } else {
+      prompts.addAll(
+        raw.split(RegExp(r'\\n\\s*\\n+'))
+            .map((part) => part.trim())
+            .where((part) => part.isNotEmpty),
+      );
+    }
+
+    if (prompts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No scene prompts were detected. Separate prompts with blank lines or use Scene 1: headers.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _scenes
+        ..clear()
+        ..addAll(List<StoryboardScene>.generate(
+          prompts.length,
+          (index) => StoryboardScene(
+            title: 'Scene ${index + 1}',
+            setting: 'Imported from your prompt',
+            action: prompts[index],
+            dialogue: 'Add dialogue for this scene if needed.',
+            camera: _cameraShots[index % _cameraShots.length],
+          ),
+        ));
+      _sceneCount = prompts.length;
+      _draftCreated = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${prompts.length} scene prompt(s) imported. Review each scene below.')),
+    );
+  }
 
   void _createOutline() {
     if (_storyPrompt.text.trim().isEmpty) {
@@ -2113,6 +2175,7 @@ class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
   void dispose() {
     _movieTitle.dispose();
     _storyPrompt.dispose();
+    _bulkScenePrompts.dispose();
     super.dispose();
   }
 
@@ -2130,6 +2193,46 @@ class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
             const Text(
               'Write your idea, prepare a scene outline, then edit each scene before moving to production.',
               style: TextStyle(color: Colors.white70, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'IMPORT YOUR SCENE PROMPTS',
+                      style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.7),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Paste all 38 prompts together. Use headings like Scene 1: and Scene 2:, or leave a blank line between prompts.',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _bulkScenePrompts,
+                      minLines: 5,
+                      maxLines: 12,
+                      decoration: const InputDecoration(
+                        hintText: 'Scene 1: ...\\nScene 2: ...\\nScene 3: ...',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _importScenePrompts,
+                        icon: const Icon(Icons.playlist_add),
+                        label: const Text('Import scene prompts'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
