@@ -239,8 +239,10 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { ok: true, service: "ryzone-cloud-backend" });
   }
 
-  const taskName = req.url?.split("?")[0]?.match(/^\/v1\/ai\/(story|dialogue|scenes)$/)?.[1];
-  if (req.method !== "POST" || !taskName) {
+  const route = req.url?.split("?")[0] || "";
+  const taskName = route.match(/^\/v1\/ai\/(story|dialogue|scenes)$/)?.[1];
+  const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
+  if (req.method !== "POST" || (!taskName && !isPhotoToCartoon)) {
     return send(res, 404, { error: "Route not found" });
   }
 
