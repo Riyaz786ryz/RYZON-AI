@@ -1,6 +1,7 @@
 import http from "node:http";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { boundedText, isValidTextInput } from "./validation.js";
 
 const PORT = Number(process.env.PORT || 8080);
@@ -13,6 +14,7 @@ const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "ryzon-ai";
 
 initializeApp({ credential: applicationDefault(), projectId: FIREBASE_PROJECT_ID });
 const firebaseAuth = getAuth();
+const firebaseDb = getFirestore();
 const MAX_BODY_BYTES = 32 * 1024;
 const MAX_TTS_BODY_BYTES = 64 * 1024;
 const WINDOW_MS = 60_000;
@@ -54,10 +56,70 @@ async function verifyUser(req) {
   if (!header.startsWith("Bearer ")) return null;
   try {
     const decoded = await firebaseAuth.verifyIdToken(header.slice(7), true);
-    return { uid: decoded.uid, email: decoded.email || null };
+    return {
+      uid: decoded.uid,
+      email: decoded.email || null,
+      displayName: decoded.name || null,
+      photoURL: decoded.picture || null,
+    };
   } catch {
     return null;
   }
+}
+
+
+async function getOrCreateUserData(user) {
+  const profileRef = firebaseDb.collection("users").doc(user.uid);
+  const walletRef = firebaseDb.collection("wallets").doc(user.uid);
+
+  return firebaseDb.runTransaction(async (transaction) => {
+    const [profileSnapshot, walletSnapshot] = await Promise.all([
+      transaction.get(profileRef),
+      transaction.get(walletRef),
+    ]);
+
+    const now = FieldValue.serverTimestamp();
+    if (!profileSnapshot.exists) {
+      transaction.create(profileRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else {
+      const profile = profileSnapshot.data() || {};
+      const updates = { updatedAt: now };
+      if (user.email && profile.email !== user.email) updates.email = user.email;
+      if (user.displayName && profile.displayName !== user.displayName) updates.displayName = user.displayName;
+      if (user.photoURL && profile.photoURL !== user.photoURL) updates.photoURL = user.photoURL;
+      transaction.set(profileRef, updates, { merge: true });
+    }
+
+    if (!walletSnapshot.exists) {
+      transaction.create(walletRef, {
+        uid: user.uid,
+        currency: "INR",
+        balancePaise: 0,
+        reservedPaise: 0,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    const profileData = profileSnapshot.exists
+      ? { ...profileSnapshot.data(), email: user.email || profileSnapshot.data()?.email || null,
+          displayName: user.displayName || profileSnapshot.data()?.displayName || null,
+          photoURL: user.photoURL || profileSnapshot.data()?.photoURL || null }
+      : { uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL };
+    const walletData = walletSnapshot.exists
+      ? walletSnapshot.data()
+      : { uid: user.uid, currency: "INR", balancePaise: 0, reservedPaise: 0, status: "active" };
+
+    return { profile: profileData, wallet: walletData };
+  });
 }
 
 function allowRequest(req) {
@@ -306,9 +368,10 @@ const server = http.createServer(async (req, res) => {
 
   const route = req.url?.split("?")[0] || "";
   const taskName = route.match(/^\/v1\/ai\/(story|dialogue|scenes)$/)?.[1];
+  const isMe = route === "/v1/me";
   const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
   const isTextToSpeech = route === "/v1/media/text-to-speech";
-  if (req.method !== "POST" || (!taskName && !isPhotoToCartoon && !isTextToSpeech)) {
+  if ((req.method !== "POST" && !(req.method === "GET" && isMe)) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isMe)) {
     return send(res, 404, { error: "Route not found" });
   }
 
@@ -321,6 +384,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
+    if (isMe) {
+      const account = await getOrCreateUserData(user);
+      return send(res, 200, { ok: true, ...account });
+    }
     const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : isTextToSpeech ? MAX_TTS_BODY_BYTES : MAX_BODY_BYTES);
     if (isPhotoToCartoon) {
       if (typeof input?.imageBase64 !== "string" || typeof input?.mimeType !== "string") {
