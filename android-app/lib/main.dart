@@ -861,10 +861,10 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
       source = frame.image;
       codec.dispose();
 
-      final left = faceBounds.left.clamp(0.0, source.width.toDouble());
-      final top = faceBounds.top.clamp(0.0, source.height.toDouble());
-      final right = faceBounds.right.clamp(0.0, source.width.toDouble());
-      final bottom = faceBounds.bottom.clamp(0.0, source.height.toDouble());
+      final left = faceBounds.left.clamp(0.0, source.width.toDouble()).toDouble();
+      final top = faceBounds.top.clamp(0.0, source.height.toDouble()).toDouble();
+      final right = faceBounds.right.clamp(0.0, source.width.toDouble()).toDouble();
+      final bottom = faceBounds.bottom.clamp(0.0, source.height.toDouble()).toDouble();
       if (right <= left || bottom <= top) return null;
 
       final recorder = ui.PictureRecorder();
