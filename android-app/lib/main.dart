@@ -2048,7 +2048,7 @@ class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
     }
 
     final headerPattern = RegExp(
-      r'^\\s*(?:scene|shot)\\s*\\d+\\s*[:.)-]\\s*',
+      r'^\s*(?:scene|shot)\s*\d+\s*[:.)-]\s*',
       caseSensitive: false,
       multiLine: true,
     );
@@ -2064,7 +2064,7 @@ class _StoryboardPreviewScreenState extends State<StoryboardPreviewScreen> {
       }
     } else {
       prompts.addAll(
-        raw.split(RegExp(r'\\n\\s*\\n+'))
+        raw.split(RegExp(r'\n\s*\n+'))
             .map((part) => part.trim())
             .where((part) => part.isNotEmpty),
       );
