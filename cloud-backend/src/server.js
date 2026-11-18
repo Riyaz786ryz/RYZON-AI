@@ -3,6 +3,7 @@ import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { boundedText, isValidTextInput } from "./validation.js";
+import { renderSlideshowMp4, validateVideoRenderInput } from "./video-render.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -371,7 +372,8 @@ const server = http.createServer(async (req, res) => {
   const isMe = route === "/v1/me";
   const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
   const isTextToSpeech = route === "/v1/media/text-to-speech";
-  if ((req.method !== "POST" && !(req.method === "GET" && isMe)) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isMe)) {
+  const isVideoRender = route === "/v1/media/render-video";
+  if ((req.method !== "POST" && !(req.method === "GET" && isMe)) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe)) {
     return send(res, 404, { error: "Route not found" });
   }
 
@@ -388,7 +390,7 @@ const server = http.createServer(async (req, res) => {
       const account = await getOrCreateUserData(user);
       return send(res, 200, { ok: true, ...account });
     }
-    const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : isTextToSpeech ? MAX_TTS_BODY_BYTES : MAX_BODY_BYTES);
+    const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : isTextToSpeech ? MAX_TTS_BODY_BYTES : isVideoRender ? 40 * 1024 * 1024 : MAX_BODY_BYTES);
     if (isPhotoToCartoon) {
       if (typeof input?.imageBase64 !== "string" || typeof input?.mimeType !== "string") {
         return send(res, 400, { error: "Photo data and MIME type are required." });
@@ -399,6 +401,12 @@ const server = http.createServer(async (req, res) => {
     if (isTextToSpeech) {
       const audio = await generateSpeech(input || {});
       return send(res, 200, { ok: true, task: "text-to-speech", ...audio });
+    }
+    if (isVideoRender) {
+      const validationError = validateVideoRenderInput(input);
+      if (validationError) return send(res, 400, { error: validationError });
+      const videoBase64 = await renderSlideshowMp4(input);
+      return send(res, 200, { ok: true, task: "render-video", mimeType: "video/mp4", videoBase64 });
     }
     const task = TASKS[taskName];
     const value = input?.[task.required];
