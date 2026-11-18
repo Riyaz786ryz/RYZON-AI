@@ -1,7 +1,7 @@
 import http from "node:http";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { isValidTextInput } from "./validation.js";
+import { boundedText, isValidTextInput } from "./validation.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -24,13 +24,13 @@ const TASKS = {
     required: "idea",
     max: 2000,
     instruction: (input) =>
-      `Write an original, engaging cartoon story in ${input.language || "Tamil"}. Audience: ${input.audience || "family"}. Theme: ${input.genre || "adventure"}. Story idea: ${input.idea}. Return a title, short character list, beginning, middle, ending, and a simple moral if suitable. Do not claim to create a video or image.`,
+      `Write an original, engaging cartoon story in ${boundedText(input.language, 40, "Tamil")}. Audience: ${boundedText(input.audience, 40, "family")}. Theme: ${boundedText(input.genre, 60, "adventure")}. Story idea: ${input.idea}. Return a title, short character list, beginning, middle, ending, and a simple moral if suitable. Do not claim to create a video or image.`,
   },
   dialogue: {
     required: "scene",
     max: 2000,
     instruction: (input) =>
-      `Write natural cartoon character dialogue in ${input.language || "Tamil"}. Scene: ${input.scene}. Characters: ${input.characters || "Create suitable characters"}. Tone: ${input.tone || "expressive and family-friendly"}. Label each speaker clearly and include brief emotion cues in brackets.`,
+      `Write natural cartoon character dialogue in ${input.language || "Tamil"}. Scene: ${input.scene}. Characters: ${boundedText(input.characters, 500, "Create suitable characters")}. Tone: ${boundedText(input.tone, 80, "expressive and family-friendly")}. Label each speaker clearly and include brief emotion cues in brackets.`,
   },
   scenes: {
     required: "story",
