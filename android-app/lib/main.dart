@@ -978,6 +978,9 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
         builder: (_) => CharacterProfileScreen(
           characterCount: _selected.length,
           sourcePhotoPaths: _photos.map((photo) => photo.path).toList(),
+          characterPhotoIndexes: _selected
+              .toList()
+              ..sort((a, b) => a.compareTo(b)),
         ),
       ),
     );
@@ -1001,10 +1004,12 @@ class CharacterProfileScreen extends StatefulWidget {
     super.key,
     required this.characterCount,
     required this.sourcePhotoPaths,
+    required this.characterPhotoIndexes,
   });
 
   final int characterCount;
   final List<String> sourcePhotoPaths;
+  final List<int> characterPhotoIndexes;
 
   @override
   State<CharacterProfileScreen> createState() => _CharacterProfileScreenState();
@@ -1015,9 +1020,11 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
   late final List<TextEditingController> _costumeControllers;
   late final List<String> _styles;
   late final List<String> _voices;
+  late final List<String> _treatments;
   late final List<bool> _continuityLocks;
 
   static const _styleOptions = ['3D Movie', 'Anime', 'Cute', 'Funny', 'Fantasy'];
+  static const _treatmentOptions = ['Cartoon', 'Keep realistic'];
   static const _voiceOptions = ['Tamil - Male', 'Tamil - Female', 'English', 'Hindi', 'Choose later'];
 
   @override
@@ -1033,6 +1040,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
     );
     _styles = List.filled(widget.characterCount, '3D Movie');
     _voices = List.filled(widget.characterCount, 'Choose later');
+    _treatments = List.filled(widget.characterCount, 'Cartoon');
     _continuityLocks = List.filled(widget.characterCount, true);
   }
 
@@ -1063,7 +1071,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
         title: const Text('Character profiles prepared'),
         content: Text(
           '${widget.characterCount} editable profile(s) are ready in this session. '
-          'Names, style, voice preference, costume notes and continuity settings have been collected. '
+          'Names, cartoon/realistic appearance, style, voice preference, costume notes and continuity settings have been collected. '
           'Permanent saving and AI character image generation are not connected yet.',
         ),
         actions: [
@@ -1140,6 +1148,11 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
                           const Icon(Icons.auto_awesome, color: Color(0xFFC8B6FF)),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Source photo ${widget.characterPhotoIndexes[index] < widget.sourcePhotoPaths.length ? widget.characterPhotoIndexes[index] + 1 : 1}',
+                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _nameControllers[index],
@@ -1164,6 +1177,25 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen> {
                             .toList(),
                         onChanged: (value) {
                           if (value != null) setState(() => _styles[index] = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _treatments[index],
+                        decoration: const InputDecoration(
+                          labelText: 'Character appearance',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _treatmentOptions
+                            .map((treatment) => DropdownMenuItem(
+                                  value: treatment,
+                                  child: Text(treatment),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _treatments[index] = value);
+                          }
                         },
                       ),
                       const SizedBox(height: 12),
