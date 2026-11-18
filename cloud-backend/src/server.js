@@ -204,18 +204,29 @@ async function generateSpeech(input) {
   const voices = new Set(["Kore", "Puck", "Charon", "Aoede", "Fenrir", "Leda", "Orus", "Zephyr"]);
   const voiceName = voices.has(input.voiceName) ? input.voiceName : "Kore";
   const language = typeof input.language === "string" ? input.language.slice(0, 40) : "Tamil";
+  // Gemini 3.8 TTS uses the Interactions API and returns a complete WAV file
+  // for non-streaming requests (24 kHz, mono, 16-bit PCM).
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_TTS_MODEL)}:generateContent`,
+    "https://generativelanguage.googleapis.com/v1beta/interactions",
     {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
       signal: AbortSignal.timeout(180_000),
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: `Speak the following text naturally in ${language}. Do not translate or add words.\\n\\n${text}` }] }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
-        },
+        model: GEMINI_TTS_MODEL,
+        input: [{
+          type: "user_input",
+          content: [{
+            type: "text",
+            text,
+            annotations: [{
+              type: "speech_metadata",
+              style: "Speak clearly and naturally in " + language + ".",
+            }],
+          }],
+        }],
+        response_format: { type: "audio" },
+        generation_config: { speech_config: [{ voice: voiceName }] },
       }),
     },
   );
@@ -227,15 +238,17 @@ async function generateSpeech(input) {
     throw error;
   }
   const data = await response.json();
-  const audioPart = data.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.data);
-  const audioBase64 = audioPart?.inlineData?.data;
-  const mimeType = audioPart?.inlineData?.mimeType || "audio/wav";
-  if (typeof audioBase64 !== "string" || !audioBase64.length || !mimeType.startsWith("audio/")) {
+  const audioPart = (data.steps || [])
+    .filter((step) => step.type === "model_output")
+    .flatMap((step) => step.content || [])
+    .filter((part) => part.type === "audio" && typeof part.data === "string")
+    .at(-1);
+  if (!audioPart?.data) {
     const error = new Error("AI voice service returned no playable audio. Please try a shorter text.");
     error.statusCode = 502;
     throw error;
   }
-  return { audioBase64, mimeType };
+  return { audioBase64: audioPart.data, mimeType: "audio/wav" };
 }
 
 async function generateWithGemini(prompt) {
