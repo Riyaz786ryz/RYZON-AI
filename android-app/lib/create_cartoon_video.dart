@@ -108,7 +108,7 @@ class _CreateCartoonVideoScreenState extends State<CreateCartoonVideoScreen> {
   Future<void> _shareVideo() async {
     final path = _videoPath;
     if (path == null) return;
-    await Share.shareXFiles([XFile(path, mimeType: 'video/mp4')], text: 'Created with RYZONE');
+    await SharePlus.instance.share(ShareParams(files: [XFile(path, mimeType: 'video/mp4')], text: 'Created with RYZONE'));
   }
 
   @override
