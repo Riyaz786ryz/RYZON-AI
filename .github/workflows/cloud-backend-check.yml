@@ -25,3 +25,6 @@ jobs:
       - name: Check backend JavaScript syntax
         working-directory: cloud-backend
         run: npm run check
+      - name: Run backend unit tests
+        working-directory: cloud-backend
+        run: npm test
