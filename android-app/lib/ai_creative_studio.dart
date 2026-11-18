@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:http/http.dart' as http;
 
-/// Configure with --dart-define=RYZON_API_BASE_URL=https://your-deployed-backend
+/// Configure with --dart-define=RYZONE_API_BASE_URL=https://your-deployed-backend
 /// Provider API keys must remain on the server and never in the APK.
 class RyzonAiApi {
-  static const String baseUrl = String.fromEnvironment('RYZON_API_BASE_URL');
+  static const String baseUrl = String.fromEnvironment('RYZONE_API_BASE_URL');
 
   static Future<Uint8List> generatePhotoToCartoon({
     required Uint8List imageBytes,
@@ -81,7 +81,7 @@ class RyzonAiApi {
 
   static Future<String> generate({required String task, required Map<String, dynamic> input}) async {
     if (baseUrl.trim().isEmpty) {
-      throw Exception('Backend not connected. Deploy the cloud backend and set RYZON_API_BASE_URL when building the app.');
+      throw Exception('Backend not connected. Deploy the cloud backend and set RYZONE_API_BASE_URL when building the app.');
     }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception('Please sign in with Google first.');
