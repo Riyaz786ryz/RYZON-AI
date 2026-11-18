@@ -485,6 +485,9 @@ class HomeScreen extends StatelessWidget {
                               if (feature.title == 'AI Story & Script Studio') {
                                 return const AiCreativeStudioScreen();
                               }
+                              if (feature.title == 'Voice Studio') {
+                                return const AiVoiceStudioScreen();
+                              }
                               if (feature.title == 'AI Movie Maker') {
                                 return const AiMovieStudioScreen();
                               }
