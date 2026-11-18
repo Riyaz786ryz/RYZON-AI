@@ -42,9 +42,9 @@ export function validateVideoRenderInput(input) {
   return null;
 }
 
-function runFfmpeg(args) {
+function runFfmpeg(args, cwd) {
   return new Promise((resolve, reject) => {
-    const child = spawn("ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn("ffmpeg", args, { cwd, stdio: ["ignore", "ignore", "pipe"] });
     let errorOutput = "";
     child.stderr.on("data", (chunk) => { errorOutput = (errorOutput + chunk.toString()).slice(-4000); });
     child.on("error", (error) => reject(error));
@@ -88,7 +88,7 @@ export async function renderSlideshowMp4(input) {
     );
     if (input.audioBase64) args.push("-map", "0:v:0", "-map", "1:a:0?", "-c:a", "aac", "-b:a", "96k", "-shortest");
     args.push("-movflags", "+faststart", "output.mp4");
-    await runFfmpeg(args);
+    await runFfmpeg(args, workDir);
     const video = await readFile(path.join(workDir, "output.mp4"));
     if (!video.length || video.length > MAX_VIDEO_BYTES) {
       const error = new Error("Rendered video is too large. Use fewer or smaller scenes.");
