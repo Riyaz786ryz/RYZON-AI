@@ -800,6 +800,8 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
   final Set<int> _selected = {};
   bool _busy = false;
   String? _error;
+  Uint8List? _generatedCartoon;
+  bool _generatingCartoon = false;
 
   Future<void> _choosePhotos() async {
     try {
@@ -848,6 +850,40 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
         _busy = false;
         _error = 'Could not read one of these photos. Please choose clear images and try again.';
       });
+    }
+  }
+
+  Future<void> _generateCartoonFromSelectedPhoto() async {
+    if (_selected.isEmpty || _generatingCartoon) return;
+    final selectedFace = _faces[_selected.first];
+    setState(() {
+      _generatingCartoon = true;
+      _generatedCartoon = null;
+      _error = null;
+    });
+    try {
+      final file = File(selectedFace.photo.path);
+      final bytes = await file.readAsBytes();
+      final extension = selectedFace.photo.path.toLowerCase().split('.').last;
+      final mimeType = extension == 'png'
+          ? 'image/png'
+          : extension == 'webp'
+              ? 'image/webp'
+              : 'image/jpeg';
+      final generated = await RyzonAiApi.generatePhotoToCartoon(
+        imageBytes: bytes,
+        mimeType: mimeType,
+        style: '3d',
+      );
+      if (!mounted) return;
+      await FreeQuotaService.recordSuccessfulUse('Photo to Cartoon');
+      setState(() => _generatedCartoon = generated);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingCartoon = false);
     }
   }
 
@@ -1024,6 +1060,43 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
                     label: Text('Confirm ${_selected.length} character(s)'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ],
+              ],
+              if (_faces.isNotEmpty && !_busy) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _selected.isEmpty || _generatingCartoon
+                      ? null
+                      : _generateCartoonFromSelectedPhoto,
+                  icon: _generatingCartoon
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome),
+                  label: Text(_generatingCartoon
+                      ? 'Generating cartoon image…'
+                      : 'Generate AI Cartoon from Selected Photo'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                ),
+                if (_generatedCartoon != null) ...[
+                  const SizedBox(height: 16),
+                  const Text('GENERATED CARTOON CHARACTER',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.memory(
+                      _generatedCartoon!,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Text(
+                        'Generated image preview could not be displayed.',
+                      ),
                     ),
                   ),
                 ],
