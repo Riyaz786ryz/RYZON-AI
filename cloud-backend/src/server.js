@@ -5,6 +5,8 @@ import { getAuth } from "firebase-admin/auth";
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "ryzon-ai";
 
 initializeApp({ credential: applicationDefault(), projectId: FIREBASE_PROJECT_ID });
@@ -68,11 +70,11 @@ function allowRequest(req) {
   return true;
 }
 
-async function readJson(req) {
+async function readJson(req, maxBytes = MAX_BODY_BYTES) {
   let body = "";
   for await (const chunk of req) {
     body += chunk;
-    if (Buffer.byteLength(body, "utf8") > MAX_BODY_BYTES) {
+    if (Buffer.byteLength(body, "utf8") > maxBytes) {
       const error = new Error("Request body too large");
       error.statusCode = 413;
       throw error;
@@ -85,6 +87,91 @@ async function readJson(req) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+async function generateCartoonImage(input) {
+  if (!OPENAI_API_KEY) {
+    const error = new Error("Photo-to-Cartoon is not enabled yet. Configure OPENAI_API_KEY securely on the backend.");
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const mimeType = input.mimeType;
+  if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+    const error = new Error("Photo must be a JPG, PNG, or WebP image.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (typeof input.imageBase64 !== "string" ||
+      !/^[A-Za-z0-9+/]+={0,2}$/.test(input.imageBase64)) {
+    const error = new Error("A valid base64 photo is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const imageBytes = Buffer.from(input.imageBase64, "base64");
+  if (!imageBytes.length || imageBytes.length > 12 * 1024 * 1024) {
+    const error = new Error("Photo must be smaller than 12 MB.");
+    error.statusCode = 413;
+    throw error;
+  }
+
+  const styles = {
+    "3d": "high-quality polished 3D animated family movie character",
+    anime: "beautiful hand-drawn anime animation style",
+    pixar: "expressive cinematic 3D family animation style",
+    comic: "colorful comic-book illustration style",
+    watercolor: "soft detailed watercolor cartoon illustration",
+  };
+  const style = styles[input.style] || styles["3d"];
+  const prompt = [
+    "Transform the provided photograph into a polished cartoon character image.",
+    "Preserve the person's recognizable facial identity, age appearance, hairstyle, pose, and clothing as closely as possible.",
+    "Do not add extra people. Keep the same number of visible people as in the source photo.",
+    "Style: " + style + ".",
+    "Create a clean, detailed image suitable as a character reference for a cartoon movie.",
+    "Do not add text, logos, or watermarks.",
+  ].join(" ");
+
+  const dataUrl = `data:${mimeType};base64,${imageBytes.toString("base64")}`;
+  const response = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    signal: AbortSignal.timeout(180_000),
+    body: JSON.stringify({
+      model: OPENAI_IMAGE_MODEL,
+      images: [{ image_url: dataUrl }],
+      prompt,
+      size: "1024x1024",
+      quality: "medium",
+      input_fidelity: "high",
+      output_format: "png",
+    }),
+  });
+
+  if (!response.ok) {
+    const error = new Error(
+      response.status === 429
+        ? "Image generation limit reached. Please try again later."
+        : response.status >= 500
+          ? "Image generation service is temporarily unavailable."
+          : "Image generation request was rejected. Check the server model and API access."
+    );
+    error.statusCode = response.status === 429 ? 429 : 502;
+    throw error;
+  }
+
+  const data = await response.json();
+  const imageBase64 = data.data?.[0]?.b64_json;
+  if (typeof imageBase64 !== "string" || !imageBase64.length) {
+    const error = new Error("Image provider returned no generated image.");
+    error.statusCode = 502;
+    throw error;
+  }
+  return imageBase64;
 }
 
 async function generateWithGemini(prompt) {
@@ -148,7 +235,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    const input = await readJson(req);
+    const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : MAX_BODY_BYTES);
+    if (isPhotoToCartoon) {
+      if (typeof input?.imageBase64 !== "string" || typeof input?.mimeType !== "string") {
+        return send(res, 400, { error: "Photo data and MIME type are required." });
+      }
+      const imageBase64 = await generateCartoonImage(input);
+      return send(res, 200, { ok: true, task: "photo-to-cartoon", mimeType: "image/png", imageBase64 });
+    }
     const task = TASKS[taskName];
     const value = input?.[task.required];
     if (typeof value !== "string" || value.trim().length < 3 || value.length > task.max) {
@@ -177,8 +271,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-if (!GEMINI_API_KEY) {
-  console.error("Missing GEMINI_API_KEY. Configure it in the hosting environment.");
+if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
+  console.error("Configure GEMINI_API_KEY and/or OPENAI_API_KEY in the hosting environment.");
   process.exit(1);
 }
 // Firebase Admin uses Application Default Credentials from the hosting platform.
