@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'app_update_service.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -24,6 +25,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   runApp(const RyzonAiApp());
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    AppUpdateService.checkForUpdate();
+  });
 }
 
 class RyzonAiApp extends StatelessWidget {
