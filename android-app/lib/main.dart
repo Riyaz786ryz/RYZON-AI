@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'ai_creative_studio.dart';
+import 'create_cartoon_video.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -490,6 +491,8 @@ class HomeScreen extends StatelessWidget {
                               if (feature.title == 'Voice Studio') {
                                 return const AiVoiceStudioScreen();
                               }
+                              if (feature.title == 'Make Cartoon Reels') { return const CartoonReelsScreen(); }
+                              if (feature.title == 'Create Cartoon Video') { return const CreateCartoonVideoScreen(); }
                               if (feature.title == 'AI Movie Maker') {
                                 return const AiMovieStudioScreen();
                               }
