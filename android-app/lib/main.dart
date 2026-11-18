@@ -855,6 +855,26 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
 
   Future<void> _generateCartoonFromSelectedPhoto() async {
     if (_selected.isEmpty || _generatingCartoon) return;
+    final consent = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Send photo for AI processing?'),
+        content: const Text(
+          'To create a cartoon, the selected photo will be uploaded securely to the RYZONE backend and sent to its configured AI image provider. Only continue if you have permission to use everyone shown in this photo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (consent != true || !mounted) return;
     final selectedFace = _faces[_selected.first];
     setState(() {
       _generatingCartoon = true;
@@ -1103,7 +1123,7 @@ class _PhotoCharacterScreenState extends State<PhotoCharacterScreen> {
               ],
               const SizedBox(height: 18),
               const Text(
-                'Privacy: face detection runs on this device. Photos are not uploaded by this screen.',
+                'Privacy: face detection runs on this device. A photo is uploaded to the RYZONE backend and configured AI provider only after you tap Generate and confirm.',
                 style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
               ),
             ],
