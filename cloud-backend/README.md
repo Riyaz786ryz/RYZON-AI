@@ -10,8 +10,9 @@ This Node.js 20 service provides server-side AI endpoints for the Flutter app. I
 - `POST /v1/ai/scenes` — create a text storyboard.
 - `POST /v1/media/photo-to-cartoon` — transform an uploaded JPG/PNG/WebP photo into a generated PNG character image (requires `OPENAI_API_KEY`).
 - `POST /v1/media/text-to-speech` — generate speech audio from text using Gemini TTS (requires `GEMINI_API_KEY`).
+- `POST /v1/media/render-video` — render 1–6 supplied scene images into a short vertical MP4, optionally with WAV/MP3/AAC audio (requires FFmpeg in the container; no AI provider call).
 
-The Flutter client sends the signed-in user's Firebase ID token to these routes. The photo route returns a generated image, not an animated video. The TTS route returns audio bytes, which the Voice Studio can play after the app is built and tested.
+The Flutter client sends the signed-in user's Firebase ID token to these routes. The photo route returns a generated image, not an animated video. The TTS route returns audio bytes. The MP4 route creates a basic slideshow-style video from already-generated scene images; it does not animate characters, generate scene images, or create lip-sync.
 
 ## Required environment and credentials
 
@@ -68,6 +69,7 @@ Do not run the deployment command until the cloud project, billing, API keys, an
 - Story, dialogue and storyboard text-generation endpoints.
 - Photo-to-cartoon image-edit endpoint with MIME/base64 validation and a 12 MB source limit.
 - Text-to-speech endpoint with a restricted prebuilt voice list and bounded input text.
+- Short MP4 slideshow renderer using FFmpeg, isolated temporary workspaces, bounded scene/audio inputs, and output-size limits.
 - Request-size limits, per-IP throttling, no-store response headers, and safe provider error handling.
 - Flutter client calls for story/dialogue/storyboard, photo-to-cartoon, and TTS; Voice Studio includes audio playback controls.
 
@@ -75,7 +77,7 @@ Do not run the deployment command until the cloud project, billing, API keys, an
 
 - Backend deployment, hosting configuration, provider keys, and HTTPS URL.
 - Successful authenticated live tests for story, dialogue, storyboard, photo-to-cartoon, and TTS/playback.
-- Speech-to-text input, lip-sync, character animation, and rendered MP4 generation.
+- Speech-to-text input, lip-sync, character animation, and AI-generated scene images. The current MP4 endpoint is a basic slideshow renderer only.
 - Private cloud storage, durable generation jobs, per-user quotas, billing/coins, and project persistence.
 - Group-photo face-to-character mapping and consistent character identity across scenes.
 - Existing-video conversion/dubbing and live cartoon camera.
