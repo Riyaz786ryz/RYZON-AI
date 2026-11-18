@@ -217,6 +217,7 @@ class StudioFeature {
 
 const features = <StudioFeature>[
   StudioFeature('Make Cartoon Reels', 'Create vertical Shorts and Reels', Icons.video_camera_back_outlined),
+  StudioFeature('Create Cartoon Video', 'Turn scene images into a narrated MP4', Icons.movie_filter_outlined),
   StudioFeature('Video / Movie Splitter', 'Split videos into 30s or 60s parts', Icons.content_cut),
   StudioFeature('Photo to Cartoon', 'Upload photos and find people', Icons.face_retouching_natural),
   StudioFeature('AI Story & Script Studio', 'Generate stories, dialogue and storyboards', Icons.auto_awesome),
