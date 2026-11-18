@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,43 @@ import 'package:http/http.dart' as http;
 /// Provider API keys must remain on the server and never in the APK.
 class RyzonAiApi {
   static const String baseUrl = String.fromEnvironment('RYZON_API_BASE_URL');
+
+  static Future<Uint8List> generatePhotoToCartoon({
+    required Uint8List imageBytes,
+    required String mimeType,
+    required String style,
+  }) async {
+    if (baseUrl.trim().isEmpty) {
+      throw Exception('AI backend is not connected yet. The server must be deployed and configured first.');
+    }
+    if (imageBytes.isEmpty || imageBytes.length > 12 * 1024 * 1024) {
+      throw Exception('Please choose an image smaller than 12 MB.');
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('Please sign in with Google first.');
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) throw Exception('Could not get your secure sign-in token. Please sign in again.');
+    final root = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final response = await http.post(
+      Uri.parse(root + '/v1/media/photo-to-cartoon'),
+      headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + token},
+      body: jsonEncode({
+        'mimeType': mimeType,
+        'imageBase64': base64Encode(imageBytes),
+        'style': style,
+      }),
+    ).timeout(const Duration(minutes: 4));
+    Map<String, dynamic> payload;
+    try { payload = jsonDecode(response.body) as Map<String, dynamic>; }
+    catch (_) { throw Exception('The AI server returned an unreadable response.'); }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(payload['error']?.toString() ?? 'Photo-to-Cartoon failed (' + response.statusCode.toString() + ').');
+    }
+    final encoded = payload['imageBase64']?.toString() ?? '';
+    if (encoded.isEmpty) throw Exception('The AI server returned no cartoon image.');
+    try { return base64Decode(encoded); }
+    catch (_) { throw Exception('The generated image could not be decoded.'); }
+  }
 
   static Future<String> generate({required String task, required Map<String, dynamic> input}) async {
     if (baseUrl.trim().isEmpty) {
