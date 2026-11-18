@@ -54,10 +54,10 @@ gcloud run deploy ryzone-ai-backend \
   --service-account RUNTIME_SERVICE_ACCOUNT_EMAIL \
   --set-env-vars FIREBASE_PROJECT_ID=ryzon-ai,GEMINI_MODEL=gemini-3.8-flash,GEMINI_TTS_MODEL=gemini-3.8-flash-tts \
   --set-secrets GEMINI_API_KEY=GEMINI_SECRET_NAME:latest,OPENAI_API_KEY=OPENAI_SECRET_NAME:latest \
-  --no-allow-unauthenticated
+  --allow-unauthenticated
 ```
 
-5. Grant the app's intended callers access through Firebase ID-token verification in the application. Cloud Run IAM ingress/authentication settings must be configured consistently; do not make the service public without an explicit security review.
+5. This example allows HTTPS requests to reach the service because a mobile app cannot safely hold a Cloud Run IAM identity token. The application endpoints still reject requests without a valid Firebase ID token. Keep provider keys in Secret Manager, review abuse/rate limits before launch, and do not remove Firebase token verification.
 6. Verify the deployed `/health` endpoint and then test every authenticated AI route with a real Firebase user token. Only after that should the HTTPS service URL be added to the Android build as `RYZON_API_BASE_URL`.
 
 Do not run the deployment command until the cloud project, billing, API keys, and service-account permissions have been reviewed and you explicitly approve any possible charges.
