@@ -188,6 +188,11 @@ async function generateCartoonImage(input) {
 }
 
 async function generateWithGemini(prompt) {
+  if (!GEMINI_API_KEY) {
+    const error = new Error("Story and dialogue AI is not enabled yet. Configure GEMINI_API_KEY securely on the backend.");
+    error.statusCode = 503;
+    throw error;
+  }
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
   const response = await fetch(endpoint, {
     method: "POST",
