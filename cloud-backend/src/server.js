@@ -115,6 +115,20 @@ async function generateCartoonImage(input) {
     error.statusCode = 413;
     throw error;
   }
+  const isPng = imageBytes.length >= 8 &&
+    imageBytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  const isJpeg = imageBytes.length >= 3 &&
+    imageBytes[0] === 0xff && imageBytes[1] === 0xd8 && imageBytes[2] === 0xff;
+  const isWebp = imageBytes.length >= 12 &&
+    imageBytes.toString("ascii", 0, 4) === "RIFF" &&
+    imageBytes.toString("ascii", 8, 12) === "WEBP";
+  if ((mimeType === "image/png" && !isPng) ||
+      (mimeType === "image/jpeg" && !isJpeg) ||
+      (mimeType === "image/webp" && !isWebp)) {
+    const error = new Error("The photo content does not match its file type.");
+    error.statusCode = 400;
+    throw error;
+  }
 
   const styles = {
     "3d": "high-quality polished 3D animated family movie character",
@@ -147,7 +161,6 @@ async function generateCartoonImage(input) {
       prompt,
       size: "1024x1024",
       quality: "medium",
-      input_fidelity: "high",
       output_format: "png",
     }),
   });
