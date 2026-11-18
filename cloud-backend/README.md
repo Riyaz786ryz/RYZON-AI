@@ -41,3 +41,8 @@ Run npm install, npm run check, then npm start from this directory.
 - The photo-to-cartoon route returns generated PNG bytes to the authenticated client; production private storage and project persistence still need to be implemented.
 
 The text studio becomes live only after the backend is deployed with valid Gemini credentials and the app is configured with RYZON_API_BASE_URL. Photo-to-cartoon becomes live only after the backend is deployed with a valid OpenAI API key and the Android client workflow is connected. This endpoint generates a character image, not a video. Do not claim a generated video exists until speech, animation, job orchestration, storage, and MP4 rendering are connected and tested.
+
+
+### Gemini text-to-speech
+
+The `POST /v1/media/text-to-speech` endpoint uses the Gemini 3.8 Flash TTS Interactions API (`GEMINI_TTS_MODEL`, default `gemini-3.8-flash-tts`). It sends a single-speaker request and returns the generated WAV audio as base64 with `mimeType: audio/wav`. Keep `GEMINI_API_KEY` configured only as a backend environment secret; never place it in the Android app.
