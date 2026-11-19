@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/validation.js",
+    "check": "node --check src/server.js && node --check src/validation.js && node --check src/wallet.js && node --check src/video-render.js",
     "test": "node --test"
   },
   "dependencies": {
