@@ -193,8 +193,10 @@ export async function getWalletSummary(db, uid) {
       reservedPaise > balancePaise) {
     throw new Error("Wallet balance data is invalid");
   }
+  const credits = Number.isSafeInteger(wallet.credits) && wallet.credits >= 0 ? wallet.credits : 0;
   return {
     currency: wallet.currency || "INR",
+    credits,
     balancePaise,
     reservedPaise,
     availablePaise: balancePaise - reservedPaise,
