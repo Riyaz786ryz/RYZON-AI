@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { reserveWalletFunds, settleWalletReservation, releaseWalletReservation, creditWalletFromVerifiedPayment, getWalletSummary } from "../src/wallet.js";
+import { reserveWalletFunds, settleWalletReservation, releaseWalletReservation, creditWalletFromVerifiedPayment, creditWalletCreditsFromVerifiedPayment, getWalletSummary } from "../src/wallet.js";
 
 function fakeDb(initialBalance = 1000) {
   const data = new Map([
@@ -98,6 +98,7 @@ test("wallet summary reports available balance after reservations", async () => 
   const summary = await getWalletSummary(db, "user-1");
   assert.deepEqual(summary, {
     currency: "INR",
+    credits: 0,
     balancePaise: 1000,
     reservedPaise: 275,
     availablePaise: 725,
@@ -116,4 +117,44 @@ test("top-up rejects invalid payment data and reused payment IDs", async () => {
     creditWalletFromVerifiedPayment(db, { uid: "user-1", paymentId: "pay_00000002", amountPaise: 200, provider: "razorpay" }),
     /different payment data/,
   );
+});
+
+test("verified Razorpay payment adds purchased credits once", async () => {
+  const { db, data } = fakeDb(0);
+  data.set("razorpayOrders/order_12345678", {
+    uid: "user-1",
+    amountPaise: 29900,
+    credits: 100,
+    currency: "INR",
+    status: "created",
+  });
+  const payment = {
+    uid: "user-1",
+    paymentId: "pay_12345678",
+    orderId: "order_12345678",
+    amountPaise: 29900,
+    credits: 100,
+  };
+  const first = await creditWalletCreditsFromVerifiedPayment(db, payment);
+  assert.equal(first.duplicate, false);
+  assert.equal(data.get("wallets/user-1").credits, 100);
+  assert.equal(data.get("walletLedger/topup_credits_pay_12345678").credits, 100);
+  const retry = await creditWalletCreditsFromVerifiedPayment(db, payment);
+  assert.equal(retry.duplicate, true);
+  assert.equal(data.get("wallets/user-1").credits, 100);
+});
+
+test("verified Razorpay top-up rejects amount or package mismatch", async () => {
+  const { db, data } = fakeDb(0);
+  data.set("razorpayOrders/order_12345679", {
+    uid: "user-1", amountPaise: 29900, credits: 100, currency: "INR", status: "created",
+  });
+  await assert.rejects(
+    creditWalletCreditsFromVerifiedPayment(db, {
+      uid: "user-1", paymentId: "pay_12345679", orderId: "order_12345679",
+      amountPaise: 54900, credits: 200,
+    }),
+    /do not match/,
+  );
+  assert.equal(data.get("wallets/user-1").credits, undefined);
 });
