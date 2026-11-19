@@ -4,6 +4,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { boundedText, isValidTextInput } from "./validation.js";
 import { renderSlideshowMp4, validateVideoRenderInput } from "./video-render.js";
+import { getWalletSummary } from "./wallet.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -370,10 +371,12 @@ const server = http.createServer(async (req, res) => {
   const route = req.url?.split("?")[0] || "";
   const taskName = route.match(/^\/v1\/ai\/(story|dialogue|scenes)$/)?.[1];
   const isMe = route === "/v1/me";
+  const isWallet = route === "/v1/wallet";
+  const isWalletTransactions = route === "/v1/wallet/transactions";
   const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
   const isTextToSpeech = route === "/v1/media/text-to-speech";
   const isVideoRender = route === "/v1/media/render-video";
-  if ((req.method !== "POST" && !(req.method === "GET" && isMe)) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe)) {
+  if ((req.method !== "POST" && !(req.method === "GET" && isMe)) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe && !isWallet && !isWalletTransactions)) {
     return send(res, 404, { error: "Route not found" });
   }
 
