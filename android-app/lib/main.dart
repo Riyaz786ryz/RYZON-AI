@@ -384,7 +384,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(22),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const CartoonReelsScreen(),
+                        builder: (_) => const CreateCartoonVideoScreen(),
                       ),
                     ),
                     child: Container(
@@ -404,18 +404,18 @@ class HomeScreen extends StatelessWidget {
                           CircleAvatar(
                             radius: 27,
                             backgroundColor: Color(0x33FFFFFF),
-                            child: Icon(Icons.video_camera_back_outlined, size: 29, color: Colors.white),
+                            child: Icon(Icons.movie_creation_outlined, size: 29, color: Colors.white),
                           ),
                           SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('MAKE CARTOON REELS', style: TextStyle(fontSize: 11, letterSpacing: 1.1, fontWeight: FontWeight.w800, color: Color(0xFFE8DFFF))),
+                                Text('CREATE CARTOON VIDEO', style: TextStyle(fontSize: 11, letterSpacing: 1.1, fontWeight: FontWeight.w800, color: Color(0xFFE8DFFF))),
                                 SizedBox(height: 5),
-                                Text('Create viral-style short videos', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                                Text('One story. A complete cartoon movie.', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
                                 SizedBox(height: 4),
-                                Text('Vertical 9:16  •  YouTube Shorts  •  Instagram Reels', style: TextStyle(fontSize: 10, color: Colors.white70)),
+                                Text('AI creates characters • dialogue • scenes • voices', style: TextStyle(fontSize: 10, color: Colors.white70)),
                               ],
                             ),
                           ),
