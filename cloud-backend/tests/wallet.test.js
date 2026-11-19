@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { reserveWalletFunds, settleWalletReservation, releaseWalletReservation } from "../src/wallet.js";
+import { reserveWalletFunds, settleWalletReservation, releaseWalletReservation, creditWalletFromVerifiedPayment, getWalletSummary } from "../src/wallet.js";
 
 function fakeDb(initialBalance = 1000) {
   const data = new Map([
@@ -9,6 +9,7 @@ function fakeDb(initialBalance = 1000) {
   const ref = (collection, id) => ({
     key: `${collection}/${id}`,
     collection, id,
+    async get() { return { exists: data.has(`${collection}/${id}`), data: () => data.get(`${collection}/${id}`) }; },
   });
   const db = {
     collection(name) {
@@ -74,5 +75,45 @@ test("rejects unsafe job ids and charges above the reservation", async () => {
   await assert.rejects(
     settleWalletReservation(db, { uid: "user-1", jobId: "job_00000005", chargePaise: 101 }),
     /exceeds reserved/,
+  );
+});
+
+
+test("verified top-up credits the wallet once and is idempotent", async () => {
+  const { db, data } = fakeDb(100);
+  const payment = { uid: "user-1", paymentId: "pay_00000001", amountPaise: 2500, provider: "razorpay" };
+  const first = await creditWalletFromVerifiedPayment(db, payment);
+  assert.equal(first.status, "credited");
+  assert.equal(first.duplicate, false);
+  assert.equal(data.get("wallets/user-1").balancePaise, 2600);
+  const retry = await creditWalletFromVerifiedPayment(db, payment);
+  assert.equal(retry.duplicate, true);
+  assert.equal(data.get("wallets/user-1").balancePaise, 2600);
+  assert.equal(data.get("walletLedger/topup_pay_00000001").type, "topup");
+});
+
+test("wallet summary reports available balance after reservations", async () => {
+  const { db } = fakeDb(1000);
+  await reserveWalletFunds(db, { uid: "user-1", jobId: "job_00000006", amountPaise: 275 });
+  const summary = await getWalletSummary(db, "user-1");
+  assert.deepEqual(summary, {
+    currency: "INR",
+    balancePaise: 1000,
+    reservedPaise: 275,
+    availablePaise: 725,
+    status: "active",
+  });
+});
+
+test("top-up rejects invalid payment data and reused payment IDs", async () => {
+  const { db } = fakeDb(1000);
+  await assert.rejects(
+    creditWalletFromVerifiedPayment(db, { uid: "user-1", paymentId: "bad/id", amountPaise: 100, provider: "razorpay" }),
+    /paymentId/,
+  );
+  await creditWalletFromVerifiedPayment(db, { uid: "user-1", paymentId: "pay_00000002", amountPaise: 100, provider: "razorpay" });
+  await assert.rejects(
+    creditWalletFromVerifiedPayment(db, { uid: "user-1", paymentId: "pay_00000002", amountPaise: 200, provider: "razorpay" }),
+    /different payment data/,
   );
 });
