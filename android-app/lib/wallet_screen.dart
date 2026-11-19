@@ -148,32 +148,23 @@ class _WalletScreenState extends State<WalletScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('AVAILABLE BALANCE', style: TextStyle(letterSpacing: 1, color: Colors.white70, fontSize: 12)),
+                    const Text('AVAILABLE CREDITS', style: TextStyle(letterSpacing: 1, color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 8),
-                    Text(_money(wallet['availablePaise']), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: _amountTile('Total balance', _money(wallet['balancePaise']))),
-                        Expanded(child: _amountTile('Reserved', _money(wallet['reservedPaise']))),
-                      ],
-                    ),
+                    Text(((wallet['credits'] as num?)?.toInt() ?? 0).toString(), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    const Text('RYZONE AI Credits', style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.lock_outline, color: Color(0xFFC8B6FF)),
-                      SizedBox(width: 10),
-                      Expanded(child: Text('Wallet recharge will be enabled after payment gateway verification is configured. Never send money to an unofficial account.')),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 18),
+              const Text('Buy Credits', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _packageCard('Starter', '100 Credits', '₹299', 'starter', 100, 'For trying RYZONE AI'),
+              _packageCard('Creator', '200 Credits', '₹549', 'creator', 200, 'For regular creators', popular: true),
+              _packageCard('Pro Creator', '500 Credits', '₹1,299', 'pro', 500, 'For frequent creators'),
+              const SizedBox(height: 8),
+              const Text('Credits are added only after the payment provider confirms the payment securely.', style: TextStyle(color: Colors.white60, fontSize: 12)),
               const SizedBox(height: 20),
               const Text('Recent transactions', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -186,7 +177,8 @@ class _WalletScreenState extends State<WalletScreen> {
                 ...transactions.map((raw) {
                   final item = raw as Map<String, dynamic>;
                   final type = item['type']?.toString() ?? '';
-                  final incoming = type == 'topup' || type == 'release';
+                  final incoming = type == 'topup' || type == 'release' || type == 'credit_topup';
+                  final credits = (item['credits'] as num?)?.toInt() ?? 0;
                   final date = DateTime.tryParse(item['createdAt']?.toString() ?? '');
                   return Card(
                     child: ListTile(
@@ -197,7 +189,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       title: Text(_titleForType(type)),
                       subtitle: Text(date == null ? 'Date unavailable' : date.toLocal().toString().substring(0, 16)),
                       trailing: Text(
-                        '${incoming ? '+' : '-'}${_money(item['amountPaise'])}',
+                        type == 'credit_topup' ? '+$credits credits' : '${incoming ? '+' : '-'}${_money(item['amountPaise'])}',
                         style: TextStyle(fontWeight: FontWeight.bold, color: incoming ? Colors.greenAccent : Colors.orangeAccent),
                       ),
                     ),
@@ -207,6 +199,28 @@ class _WalletScreenState extends State<WalletScreen> {
           );
         },
       ),
+    ),
+  );
+
+  Widget _packageCard(String title, String creditsLabel, String price, String packageId,
+      int credits, String subtitle, {bool popular = false}) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(15),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (popular) const Text('POPULAR', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 11)),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(price, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 4),
+        Text(creditsLabel, style: const TextStyle(fontSize: 18, color: Color(0xFFC8B6FF), fontWeight: FontWeight.w700)),
+        Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 10),
+        SizedBox(width: double.infinity, child: FilledButton(
+          onPressed: _purchasing ? null : () => _buyCredits(packageId, credits),
+          child: Text(_purchasing ? 'Please wait...' : 'Buy ' + creditsLabel),
+        )),
+      ]),
     ),
   );
 
