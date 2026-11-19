@@ -109,6 +109,7 @@ async function getOrCreateUserData(user) {
         uid: user.uid,
         currency: "INR",
         balancePaise: 0,
+        credits: 0,
         reservedPaise: 0,
         status: "active",
         createdAt: now,
@@ -123,7 +124,7 @@ async function getOrCreateUserData(user) {
       : { uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL };
     const walletData = walletSnapshot.exists
       ? walletSnapshot.data()
-      : { uid: user.uid, currency: "INR", balancePaise: 0, reservedPaise: 0, status: "active" };
+      : { uid: user.uid, currency: "INR", balancePaise: 0, credits: 0, reservedPaise: 0, status: "active" };
 
     return { profile: profileData, wallet: walletData };
   });
@@ -473,6 +474,7 @@ const server = http.createServer(async (req, res) => {
             id: doc.id,
             type: item.type || "transaction",
             amountPaise: Number.isSafeInteger(item.amountPaise) ? item.amountPaise : 0,
+            credits: Number.isSafeInteger(item.credits) ? item.credits : 0,
             createdAt,
           };
         })
