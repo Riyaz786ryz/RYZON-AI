@@ -61,4 +61,18 @@ Customer prices must be set per feature and duration only after measuring real p
 
 ## Implementation status
 
-This document is a design specification only. It does not mean wallet code, payment gateway integration, provider postpaid billing, monthly invoices, or budget enforcement are implemented or live-tested. Do not deploy billable services or enable paid billing without the owner's explicit approval.
+Implemented in the repository (automated unit tests pass; not yet deployed or tested against live Firestore):
+- Integer-paise wallet reservation, settlement, release, append-only ledger writes, and idempotent job handling in `cloud-backend/src/wallet.js`.
+- A server-side idempotent wallet-credit primitive for a verified payment. It must only be called after a gateway webhook signature and payment status are verified; it is not exposed as a client endpoint.
+- Authenticated `GET /v1/wallet` and `GET /v1/wallet/transactions` endpoints.
+- Firestore index configuration for newest-first wallet ledger history.
+- Flutter wallet screen showing balance, reserved amount, available amount, and recent transactions. It requires the backend URL and deployed service to work.
+
+Still not implemented / not live:
+- Payment gateway selection, checkout/order creation, signed webhook endpoint, refunds, and settlement reconciliation.
+- Admin support tools and role-protected adjustments.
+- Firestore emulator/concurrency testing and live Firestore verification.
+- AI endpoint integration with wallet reservation and settlement. AI routes do not yet deduct customer wallet funds.
+- Provider postpaid billing, invoices, owner budget enforcement, and live cost reconciliation.
+
+Do not deploy billable services, activate payment collection, or enable paid billing without the owner's explicit approval.
