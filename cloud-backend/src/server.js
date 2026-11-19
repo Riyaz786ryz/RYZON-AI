@@ -393,6 +393,34 @@ const server = http.createServer(async (req, res) => {
       const account = await getOrCreateUserData(user);
       return send(res, 200, { ok: true, ...account });
     }
+    if (isWallet) {
+      const wallet = await getWalletSummary(firebaseDb, user.uid);
+      return send(res, 200, { ok: true, wallet });
+    }
+    if (isWalletTransactions) {
+      const snapshot = await firebaseDb.collection("walletLedger")
+        .where("uid", "==", user.uid)
+        .limit(100)
+        .get();
+      const transactions = snapshot.docs
+        .map((doc) => {
+          const item = doc.data();
+          const createdAt = item.createdAt?.toDate
+            ? item.createdAt.toDate().toISOString()
+            : item.createdAt instanceof Date
+              ? item.createdAt.toISOString()
+              : null;
+          return {
+            id: doc.id,
+            type: item.type || "transaction",
+            amountPaise: Number.isSafeInteger(item.amountPaise) ? item.amountPaise : 0,
+            createdAt,
+          };
+        })
+        .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+        .slice(0, 50);
+      return send(res, 200, { ok: true, transactions });
+    }
     const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : isTextToSpeech ? MAX_TTS_BODY_BYTES : isVideoRender ? 40 * 1024 * 1024 : MAX_BODY_BYTES);
     if (isPhotoToCartoon) {
       if (typeof input?.imageBase64 !== "string" || typeof input?.mimeType !== "string") {
