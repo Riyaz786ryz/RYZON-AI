@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'ai_creative_studio.dart';
 import 'create_cartoon_video.dart';
+import 'wallet_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -307,6 +308,13 @@ class HomeScreen extends StatelessWidget {
             },
           ),
           actions: [
+            IconButton(
+              tooltip: 'My Wallet',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const WalletScreen()),
+              ),
+              icon: const Icon(Icons.account_balance_wallet_outlined),
+            ),
             IconButton(
               tooltip: 'My Profile',
               onPressed: () => Navigator.of(context).push(
