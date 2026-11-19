@@ -1,10 +1,12 @@
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { boundedText, isValidTextInput } from "./validation.js";
 import { renderSlideshowMp4, validateVideoRenderInput } from "./video-render.js";
-import { getWalletSummary } from "./wallet.js";
+import { getWalletSummary, creditWalletCreditsFromVerifiedPayment } from "./wallet.js";
+import { CREDIT_PACKAGES, verifyRazorpayWebhookSignature, parseCapturedRazorpayPayment } from "./razorpay.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -13,6 +15,9 @@ const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-3.8-flash-tts";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "ryzon-ai";
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
 initializeApp({ credential: applicationDefault(), projectId: FIREBASE_PROJECT_ID });
 const firebaseAuth = getAuth();
@@ -154,6 +159,22 @@ async function readJson(req, maxBytes = MAX_BODY_BYTES) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+
+async function readRawBody(req, maxBytes = 1024 * 1024) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of req) {
+    total += chunk.length;
+    if (total > maxBytes) {
+      const error = new Error("Request body too large");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, total);
 }
 
 async function generateCartoonImage(input) {
@@ -373,11 +394,48 @@ const server = http.createServer(async (req, res) => {
   const isMe = route === "/v1/me";
   const isWallet = route === "/v1/wallet";
   const isWalletTransactions = route === "/v1/wallet/transactions";
+  const isRazorpayOrder = route === "/v1/payments/razorpay/order";
+  const isRazorpayWebhook = route === "/v1/webhooks/razorpay";
   const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
   const isTextToSpeech = route === "/v1/media/text-to-speech";
   const isVideoRender = route === "/v1/media/render-video";
-  if ((req.method !== "POST" && !(req.method === "GET" && (isMe || isWallet || isWalletTransactions))) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe && !isWallet && !isWalletTransactions)) {
+  if ((req.method !== "POST" && !(req.method === "GET" && (isMe || isWallet || isWalletTransactions))) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe && !isWallet && !isWalletTransactions && !isRazorpayOrder)) {
     return send(res, 404, { error: "Route not found" });
+  }
+
+  if (isRazorpayWebhook) {
+    if (req.method !== "POST") return send(res, 405, { error: "Method not allowed" });
+    if (!RAZORPAY_WEBHOOK_SECRET) return send(res, 503, { error: "Payment webhook is not configured" });
+    try {
+      const rawBody = await readRawBody(req);
+      const signature = req.headers["x-razorpay-signature"] || "";
+      if (!verifyRazorpayWebhookSignature(rawBody, signature, RAZORPAY_WEBHOOK_SECRET)) {
+        return send(res, 400, { error: "Invalid payment webhook signature" });
+      }
+      let payload;
+      try { payload = JSON.parse(rawBody.toString("utf8")); }
+      catch { return send(res, 400, { error: "Invalid webhook JSON" }); }
+      const payment = parseCapturedRazorpayPayment(payload);
+      if (!payment) return send(res, 200, { received: true, ignored: true });
+      const orderSnapshot = await firebaseDb.collection("razorpayOrders").doc(payment.orderId).get();
+      if (!orderSnapshot.exists) return send(res, 400, { error: "Payment order not found" });
+      const order = orderSnapshot.data();
+      if (order.amountPaise !== payment.amountPaise || order.currency !== payment.currency) {
+        return send(res, 400, { error: "Payment amount or currency mismatch" });
+      }
+      const result = await creditWalletCreditsFromVerifiedPayment(firebaseDb, {
+        uid: order.uid,
+        paymentId: payment.paymentId,
+        orderId: payment.orderId,
+        amountPaise: payment.amountPaise,
+        credits: order.credits,
+      });
+      return send(res, 200, { received: true, credited: !result.duplicate, duplicate: result.duplicate });
+    } catch (error) {
+      const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+      if (status === 500) console.error("RYZONE Razorpay webhook failed:", error.name || "Error");
+      return send(res, status, { error: status === 500 ? "Webhook processing failed" : error.message });
+    }
   }
 
   const user = await verifyUser(req);
@@ -421,6 +479,61 @@ const server = http.createServer(async (req, res) => {
         .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
         .slice(0, 50);
       return send(res, 200, { ok: true, transactions });
+    }
+    if (isRazorpayOrder) {
+      if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+        return send(res, 503, { error: "Razorpay payments are not configured yet" });
+      }
+      const input = await readJson(req);
+      const selectedPackage = CREDIT_PACKAGES[input?.packageId];
+      if (!selectedPackage) return send(res, 400, { error: "Choose a valid credit package" });
+      await getOrCreateUserData(user);
+      const receipt = "rz_" + randomUUID().replace(/-/g, "").slice(0, 24);
+      const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Basic " + Buffer.from(RAZORPAY_KEY_ID + ":" + RAZORPAY_KEY_SECRET).toString("base64"),
+        },
+        signal: AbortSignal.timeout(20_000),
+        body: JSON.stringify({
+          amount: selectedPackage.amountPaise,
+          currency: "INR",
+          receipt,
+          notes: { uid: user.uid, packageId: selectedPackage.id },
+        }),
+      });
+      if (!razorpayResponse.ok) {
+        const error = new Error("Razorpay could not create the payment order");
+        error.statusCode = 502;
+        throw error;
+      }
+      const razorpayOrder = await razorpayResponse.json();
+      if (typeof razorpayOrder.id !== "string" || razorpayOrder.amount !== selectedPackage.amountPaise ||
+          razorpayOrder.currency !== "INR") {
+        const error = new Error("Razorpay returned an invalid payment order");
+        error.statusCode = 502;
+        throw error;
+      }
+      await firebaseDb.collection("razorpayOrders").doc(razorpayOrder.id).create({
+        uid: user.uid,
+        packageId: selectedPackage.id,
+        packageName: selectedPackage.name,
+        amountPaise: selectedPackage.amountPaise,
+        credits: selectedPackage.credits,
+        currency: "INR",
+        status: "created",
+        createdAt: new Date(),
+      });
+      return send(res, 200, {
+        ok: true,
+        keyId: RAZORPAY_KEY_ID,
+        orderId: razorpayOrder.id,
+        amount: selectedPackage.amountPaise,
+        currency: "INR",
+        packageName: selectedPackage.name,
+        credits: selectedPackage.credits,
+      });
     }
     const input = await readJson(req, isPhotoToCartoon ? 17 * 1024 * 1024 : isTextToSpeech ? MAX_TTS_BODY_BYTES : isVideoRender ? 40 * 1024 * 1024 : MAX_BODY_BYTES);
     if (isPhotoToCartoon) {
