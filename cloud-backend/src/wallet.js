@@ -127,3 +127,77 @@ export async function releaseWalletReservation(db, { uid, jobId, reason = "faile
     return { status: "released", releasedPaise: job.reservedPaise, duplicate: false };
   });
 }
+
+/**
+ * Credit a wallet only after a payment-gateway webhook signature and payment
+ * status have been verified by the server. Never call this from a client route.
+ */
+export async function creditWalletFromVerifiedPayment(db, {
+  uid, paymentId, amountPaise, provider,
+}) {
+  if (!uid || typeof uid !== "string") throw new TypeError("uid is required");
+  if (typeof paymentId !== "string" || !/^[A-Za-z0-9_-]{8,160}$/.test(paymentId)) {
+    throw new TypeError("paymentId must be 8-160 safe characters");
+  }
+  assertPaise(amountPaise, "amountPaise");
+  if (typeof provider !== "string" || !/^[a-z0-9_-]{2,40}$/i.test(provider)) {
+    throw new TypeError("provider is invalid");
+  }
+
+  const walletRef = db.collection("wallets").doc(uid);
+  const paymentRef = db.collection("walletPayments").doc(paymentId);
+  const ledgerRef = db.collection("walletLedger").doc(`topup_${paymentId}`);
+
+  return db.runTransaction(async (tx) => {
+    const [walletSnap, paymentSnap] = await Promise.all([
+      tx.get(walletRef), tx.get(paymentRef),
+    ]);
+    if (paymentSnap.exists) {
+      const existing = paymentSnap.data();
+      if (existing.uid !== uid || existing.amountPaise !== amountPaise ||
+          existing.provider !== provider) {
+        throw new Error("Payment id already used with different payment data");
+      }
+      return { status: "credited", amountPaise, duplicate: true };
+    }
+    if (!walletSnap.exists) throw new Error("Wallet not found");
+    const wallet = walletSnap.data();
+    if (wallet.status !== "active") throw new Error("Wallet is not active");
+    if (!Number.isSafeInteger(wallet.balancePaise) || wallet.balancePaise < 0) {
+      throw new Error("Wallet balance data is invalid");
+    }
+    const nextBalance = wallet.balancePaise + amountPaise;
+    if (!Number.isSafeInteger(nextBalance)) throw new Error("Wallet balance limit exceeded");
+    const now = new Date();
+    tx.update(walletRef, { balancePaise: nextBalance, updatedAt: now });
+    tx.create(paymentRef, {
+      uid, paymentId, amountPaise, provider, status: "credited", createdAt: now,
+    });
+    tx.create(ledgerRef, {
+      uid, paymentId, type: "topup", amountPaise, provider, createdAt: now,
+    });
+    return { status: "credited", amountPaise, duplicate: false };
+  });
+}
+
+/** Return server-owned wallet totals; callers must authenticate the user first. */
+export async function getWalletSummary(db, uid) {
+  if (!uid || typeof uid !== "string") throw new TypeError("uid is required");
+  const snapshot = await db.collection("wallets").doc(uid).get();
+  if (!snapshot.exists) throw new Error("Wallet not found");
+  const wallet = snapshot.data();
+  const balancePaise = wallet.balancePaise;
+  const reservedPaise = wallet.reservedPaise || 0;
+  if (!Number.isSafeInteger(balancePaise) || balancePaise < 0 ||
+      !Number.isSafeInteger(reservedPaise) || reservedPaise < 0 ||
+      reservedPaise > balancePaise) {
+    throw new Error("Wallet balance data is invalid");
+  }
+  return {
+    currency: wallet.currency || "INR",
+    balancePaise,
+    reservedPaise,
+    availablePaise: balancePaise - reservedPaise,
+    status: wallet.status,
+  };
+}
