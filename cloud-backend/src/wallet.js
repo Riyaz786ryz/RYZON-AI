@@ -201,3 +201,74 @@ export async function getWalletSummary(db, uid) {
     status: wallet.status,
   };
 }
+
+/**
+ * Credit purchased RYZONE credits only after the Razorpay webhook signature,
+ * captured status, order ownership, currency and amount have been verified.
+ */
+export async function creditWalletCreditsFromVerifiedPayment(db, {
+  uid, paymentId, orderId, amountPaise, credits,
+}) {
+  if (!uid || typeof uid !== "string") throw new TypeError("uid is required");
+  if (typeof paymentId !== "string" || !/^[A-Za-z0-9_-]{8,160}$/.test(paymentId)) {
+    throw new TypeError("paymentId must be 8-160 safe characters");
+  }
+  if (typeof orderId !== "string" || !/^order_[A-Za-z0-9]+$/.test(orderId)) {
+    throw new TypeError("orderId is invalid");
+  }
+  assertPaise(amountPaise, "amountPaise");
+  if (!Number.isSafeInteger(credits) || credits <= 0 || credits > 100000) {
+    throw new TypeError("credits must be a positive integer");
+  }
+
+  const walletRef = db.collection("wallets").doc(uid);
+  const orderRef = db.collection("razorpayOrders").doc(orderId);
+  const paymentRef = db.collection("walletCreditPayments").doc(paymentId);
+  const ledgerRef = db.collection("walletLedger").doc(`topup_credits_${paymentId}`);
+
+  return db.runTransaction(async (tx) => {
+    const [walletSnap, orderSnap, paymentSnap] = await Promise.all([
+      tx.get(walletRef), tx.get(orderRef), tx.get(paymentRef),
+    ]);
+    if (!orderSnap.exists) throw new Error("Razorpay order not found");
+    const order = orderSnap.data();
+    if (order.uid !== uid || order.amountPaise !== amountPaise ||
+        order.credits !== credits || order.status !== "created") {
+      if (paymentSnap.exists) {
+        const existing = paymentSnap.data();
+        if (existing.uid === uid && existing.orderId === orderId &&
+            existing.amountPaise === amountPaise && existing.credits === credits) {
+          return { status: "credited", credits, duplicate: true };
+        }
+      }
+      throw new Error("Razorpay order details do not match the verified payment");
+    }
+    if (paymentSnap.exists) {
+      const existing = paymentSnap.data();
+      if (existing.uid !== uid || existing.orderId !== orderId ||
+          existing.amountPaise !== amountPaise || existing.credits !== credits) {
+        throw new Error("Payment id already used with different payment data");
+      }
+      return { status: "credited", credits, duplicate: true };
+    }
+    if (!walletSnap.exists) throw new Error("Wallet not found");
+    const wallet = walletSnap.data();
+    if (wallet.status !== "active") throw new Error("Wallet is not active");
+    const currentCredits = Number.isSafeInteger(wallet.credits) ? wallet.credits : 0;
+    if (currentCredits < 0 || currentCredits + credits > 100000000) {
+      throw new Error("Wallet credit balance is invalid");
+    }
+    const now = new Date();
+    tx.update(walletRef, { credits: currentCredits + credits, updatedAt: now });
+    tx.create(paymentRef, {
+      uid, paymentId, orderId, amountPaise, credits, provider: "razorpay",
+      status: "credited", createdAt: now,
+    });
+    tx.create(ledgerRef, {
+      uid, paymentId, orderId, type: "credit_topup", credits,
+      amountPaise, provider: "razorpay", createdAt: now,
+    });
+    tx.update(orderRef, { status: "paid", paymentId, paidAt: now, updatedAt: now });
+    return { status: "credited", credits, duplicate: false };
+  });
+}
