@@ -4,7 +4,7 @@ This Node.js 20 service provides server-side AI endpoints for the Flutter app. I
 
 ## Endpoints
 
-- `GET /health` — service health check.
+- `GET /health` — service health check.\n- `GET /v1/wallet` — return the authenticated user’s wallet totals in integer paise (balance, reserved, and available).\n- `GET /v1/wallet/transactions` — return up to 50 newest wallet ledger entries for the authenticated user.
 - `POST /v1/ai/story` — create a cartoon story.
 - `POST /v1/ai/dialogue` — create character dialogue.
 - `POST /v1/ai/scenes` — create a text storyboard.
@@ -70,7 +70,7 @@ Do not run the deployment command until the cloud project, billing, API keys, an
 - Photo-to-cartoon image-edit endpoint with MIME/base64 validation and a 12 MB source limit.
 - Text-to-speech endpoint with a restricted prebuilt voice list and bounded input text.
 - Short MP4 slideshow renderer using FFmpeg, isolated temporary workspaces, bounded scene/audio inputs, and output-size limits.
-- Request-size limits, per-IP throttling, no-store response headers, and safe provider error handling.
+- Request-size limits, per-IP throttling, no-store response headers, and safe provider error handling.\n- Atomic wallet reservation, settlement, release, idempotent verified-payment credit primitive, authenticated wallet summary, and ledger-history endpoints.\n- Firestore composite index definition for newest-first wallet transaction history.
 - Flutter client calls for story/dialogue/storyboard, photo-to-cartoon, and TTS; Voice Studio includes audio playback controls.
 
 ## Still required before the app can be called functional
@@ -78,7 +78,7 @@ Do not run the deployment command until the cloud project, billing, API keys, an
 - Backend deployment, hosting configuration, provider keys, and HTTPS URL.
 - Successful authenticated live tests for story, dialogue, storyboard, photo-to-cartoon, and TTS/playback.
 - Speech-to-text input, lip-sync, character animation, and AI-generated scene images. The current MP4 endpoint is a basic slideshow renderer only.
-- Private cloud storage, durable generation jobs, per-user quotas, billing/coins, and project persistence.
+- Payment-gateway checkout and signed webhook verification are not implemented; `creditWalletFromVerifiedPayment` is an internal server primitive and must only be called after gateway signature/status verification. No public client route can credit a wallet.\n- Payment-gateway checkout, per-user quotas, durable generation jobs, and project persistence remain required.
 - Group-photo face-to-character mapping and consistent character identity across scenes.
 - Existing-video conversion/dubbing and live cartoon camera.
 
