@@ -163,6 +163,11 @@ class _WalletScreenState extends State<WalletScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String _money(dynamic value) {
+    final paise = value is num ? value.toInt() : 0;
+    return '₹' + (paise / 100).toStringAsFixed(2);
+  }
+
   String _titleForType(String type) {
     switch (type) {
       case 'topup':
@@ -277,7 +282,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       title: Text(_titleForType(type)),
                       subtitle: Text(date == null ? 'Date unavailable' : date.toLocal().toString().substring(0, 16)),
                       trailing: Text(
-                        type == 'credit_topup' ? '+' + credits.toString() + ' credits' : (incoming ? '+' : '-') + '₹' + ((item['amountPaise'] as num?)?.toInt() ?? 0 / 100).toString(),
+                        type == 'credit_topup' ? '+' + credits.toString() + ' credits' : (incoming ? '+' : '-') + _money(item['amountPaise']),
                         style: TextStyle(fontWeight: FontWeight.bold, color: incoming ? Colors.greenAccent : Colors.orangeAccent),
                       ),
                     ),
