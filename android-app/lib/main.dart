@@ -205,8 +205,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
           if (snapshot.hasError) return Column(children: [Text('Wallet sync is not available yet: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.orangeAccent)), TextButton(onPressed: () => setState(() => _accountFuture = _loadAccount()), child: const Text('Retry'))]);
           final wallet = snapshot.data?['wallet'] as Map<String, dynamic>?;
-          final paise = (wallet?['balancePaise'] as num?)?.toInt() ?? 0;
-          return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(children: [const Text('Wallet balance', style: TextStyle(color: Colors.white70)), const SizedBox(height: 6), Text('₹${(paise / 100).toStringAsFixed(2)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)), const SizedBox(height: 4), const Text('INR • Secure server balance', style: TextStyle(color: Colors.white54, fontSize: 12))])));
+          final credits = (wallet?['credits'] as num?)?.toInt() ?? 0;
+          return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(children: [const Text('RYZONE Credits', style: TextStyle(color: Colors.white70)), const SizedBox(height: 6), Text(credits.toString(), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)), const SizedBox(height: 4), const Text('Secure wallet balance', style: TextStyle(color: Colors.white54, fontSize: 12))])));
         }),
       ]))),
     );
