@@ -1514,7 +1514,7 @@ class _CartoonReelsScreenState extends State<CartoonReelsScreen> {
       final returnCode = await session.getReturnCode();
       if (!ReturnCode.isSuccess(returnCode) || !await File(outputPath).exists()) {
         final logs = await session.getAllLogsAsString();
-        throw Exception(logs.isEmpty ? 'Video rendering failed.' : logs);
+        throw Exception(logs == null || logs.isEmpty ? 'Video rendering failed.' : logs);
       }
       if (!mounted) return;
       setState(() => _generatedVideoPath = outputPath);
