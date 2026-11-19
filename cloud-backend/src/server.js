@@ -399,7 +399,7 @@ const server = http.createServer(async (req, res) => {
   const isPhotoToCartoon = route === "/v1/media/photo-to-cartoon";
   const isTextToSpeech = route === "/v1/media/text-to-speech";
   const isVideoRender = route === "/v1/media/render-video";
-  if ((req.method !== "POST" && !(req.method === "GET" && (isMe || isWallet || isWalletTransactions))) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe && !isWallet && !isWalletTransactions && !isRazorpayOrder)) {
+  if ((req.method !== "POST" && !(req.method === "GET" && (isMe || isWallet || isWalletTransactions))) || (!taskName && !isPhotoToCartoon && !isTextToSpeech && !isVideoRender && !isMe && !isWallet && !isWalletTransactions && !isRazorpayOrder && !isRazorpayWebhook)) {
     return send(res, 404, { error: "Route not found" });
   }
 
