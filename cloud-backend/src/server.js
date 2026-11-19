@@ -400,7 +400,8 @@ const server = http.createServer(async (req, res) => {
     if (isWalletTransactions) {
       const snapshot = await firebaseDb.collection("walletLedger")
         .where("uid", "==", user.uid)
-        .limit(100)
+        .orderBy("createdAt", "desc")
+        .limit(50)
         .get();
       const transactions = snapshot.docs
         .map((doc) => {
